@@ -73,7 +73,8 @@ services:
         value: "*"
 
   # 4. Vue/Vite Frontend (Static Web App - Free & handles unlimited traffic)
-  - type: static
+  - type: web
+    env: static
     name: anon-chat-frontend
     plan: starter
     buildCommand: npm run build
