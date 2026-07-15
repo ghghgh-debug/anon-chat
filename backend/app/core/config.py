@@ -6,23 +6,26 @@ from functools import lru_cache
 class Settings(BaseSettings):
     # App
     APP_NAME: str = "AnonChat TMA"
-    DEBUG: bool = True
+    DEBUG: bool = False
 
-    # Telegram Bot
-    BOT_TOKEN: str = "YOUR_BOT_TOKEN"
-    WEBAPP_URL: str = "https://your-app.example.com"
+    # Telegram Bot — REQUIRED, must be set in .env
+    BOT_TOKEN: str  # No default! Load from environment only
+    WEBAPP_URL: str  # No default!
 
-    # Database
-    DATABASE_URL: str = "postgresql+asyncpg://anon_user:anon_password@localhost:5432/anon_chat"
+    # Database — REQUIRED
+    DATABASE_URL: str
 
-    # Redis
-    REDIS_URL: str = "redis://localhost:6379/0"
+    # Redis — REQUIRED
+    REDIS_URL: str
 
-    # Centrifugo
-    CENTRIFUGO_URL: str = "http://localhost:8000"
-    CENTRIFUGO_API_KEY: str = "my_api_key_12345"
-    CENTRIFUGO_HMAC_SECRET: str = "my_super_secret_key_12345"
+    # Centrifugo — REQUIRED
+    CENTRIFUGO_URL: str
+    CENTRIFUGO_API_KEY: str
+    CENTRIFUGO_HMAC_SECRET: str
     CENTRIFUGO_TOKEN_TTL: int = 86400  # 24 hours
+
+    # CORS — Restrict to your frontend domain
+    ALLOWED_ORIGINS: List[str] = ["https://your-frontend.com"]
 
     # Admin IDs (Telegram user IDs)
     ADMIN_IDS: List[int] = [1394761072, 6276891414, 8649919962]
@@ -45,6 +48,9 @@ class Settings(BaseSettings):
 
     # Matching
     ROOM_TTL_SECONDS: int = 300  # Room expires after 5 min if not matched
+    
+    # Concurrent chat limit per user (abuse prevention)
+    MAX_CONCURRENT_CHATS: int = 1
 
     class Config:
         env_file = ".env"
