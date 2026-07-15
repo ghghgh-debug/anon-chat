@@ -1,6 +1,13 @@
 import { Centrifuge } from 'centrifuge'
 
-const VITE_CENTRIFUGO_URL = import.meta.env.VITE_CENTRIFUGO_URL
+let VITE_CENTRIFUGO_URL = import.meta.env.VITE_CENTRIFUGO_URL
+
+if (typeof window !== 'undefined') {
+  const origin = window.location.origin
+  if (origin.includes('anon-chat-frontend')) {
+    VITE_CENTRIFUGO_URL = origin.replace('anon-chat-frontend', 'anon-chat-centrifugo')
+  }
+}
 
 /**
  * Mock Centrifugo real-time client.

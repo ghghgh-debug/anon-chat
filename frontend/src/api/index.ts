@@ -6,6 +6,12 @@
  */
 
 let rawApiUrl = import.meta.env.VITE_API_URL
+if (typeof window !== 'undefined') {
+  const origin = window.location.origin
+  if (origin.includes('anon-chat-frontend')) {
+    rawApiUrl = origin.replace('anon-chat-frontend', 'anon-chat-backend')
+  }
+}
 if (!rawApiUrl) {
   rawApiUrl = typeof window !== 'undefined' ? `${window.location.origin}/api` : 'http://localhost:8080/api'
 } else if (!rawApiUrl.endsWith('/api') && !rawApiUrl.endsWith('/api/')) {
