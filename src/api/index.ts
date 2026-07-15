@@ -5,8 +5,10 @@
  * in the Authorization header on every request.
  */
 
-let rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
-if (rawApiUrl && !rawApiUrl.endsWith('/api') && !rawApiUrl.endsWith('/api/')) {
+let rawApiUrl = import.meta.env.VITE_API_URL
+if (!rawApiUrl) {
+  rawApiUrl = typeof window !== 'undefined' ? `${window.location.origin}/api` : 'http://localhost:8080/api'
+} else if (!rawApiUrl.endsWith('/api') && !rawApiUrl.endsWith('/api/')) {
   rawApiUrl = rawApiUrl.endsWith('/') ? `${rawApiUrl}api` : `${rawApiUrl}/api`
 }
 const API_BASE = rawApiUrl
