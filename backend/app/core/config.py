@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     # Telegram Bot
     BOT_TOKEN: str = ""
     WEBAPP_URL: str = ""
+    BACKEND_URL: str = ""
 
     # Database
     DATABASE_URL: str = ""
@@ -60,6 +61,9 @@ class Settings(BaseSettings):
 @lru_cache()
 def get_settings() -> Settings:
     settings = Settings()
-    if settings.DATABASE_URL and settings.DATABASE_URL.startswith("postgresql://"):
-        settings.DATABASE_URL = settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+    if settings.DATABASE_URL:
+        if settings.DATABASE_URL.startswith("postgresql://"):
+            settings.DATABASE_URL = settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+        elif settings.DATABASE_URL.startswith("postgres://"):
+            settings.DATABASE_URL = settings.DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
     return settings
