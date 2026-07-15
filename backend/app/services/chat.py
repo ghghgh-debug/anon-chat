@@ -21,12 +21,13 @@ class ChatService:
         self.settings = get_settings()
 
     async def create_chat(
-        self, db: AsyncSession, user_a_id: int, user_b_id: int
+        self, db: AsyncSession, user_a_id: int, user_b_id: int, language: str = "ru"
     ) -> Chat:
         """Create a new chat record in the database."""
         chat = Chat(
             user_a_id=user_a_id,
             user_b_id=user_b_id,
+            language=language,
             started_at=datetime.now(timezone.utc),
         )
         db.add(chat)
