@@ -66,6 +66,7 @@ export const userApi = {
     avatar_url?: string
     bio?: string
     agreed_to_rules: boolean
+    app_language: 'ru' | 'en' | 'uz'
     referral_code?: string
   }) => request<any>('/users/onboarding', {
     method: 'POST',
