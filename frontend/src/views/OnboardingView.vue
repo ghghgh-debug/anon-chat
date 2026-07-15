@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { userApi } from '../api'
+import { appLanguage, setAppLanguage, topicOptions, type AppLanguage, t } from '../i18n'
 
 const router = useRouter()
 const step = ref(0)
@@ -9,26 +10,23 @@ const loading = ref(false)
 const error = ref('')
 
 const agreedToRules = ref(false)
-const age = ref(18)
+const age = ref(14)
 const gender = ref('')
 const selectedTopics = ref<string[]>([])
 const nickname = ref('')
 
-const availableTopics = [
-  '💬 Общение', '🎮 Игры', '🎵 Музыка', '🎬 Кино',
-  '📚 Книги', '💻 Технологии', '🏋️ Спорт', '🎨 Искусство',
-  '✈️ Путешествия', '🍳 Кулинария', '📷 Фото', '🐱 Животные',
-  '💡 Наука', '💼 Бизнес', '🎓 Образование', '🌐 Языки',
-]
+const availableTopics = topicOptions
+const languageOptions: [AppLanguage, string][] = [['ru', 'Русский'], ['en', 'English'], ['uz', "O'zbekcha"]]
 
 const canProceed = computed(() => {
   switch (step.value) {
-    case 0: return agreedToRules.value
-    case 1: return age.value >= 18 && age.value <= 99
-    case 2: return gender.value !== ''
-    case 3: return selectedTopics.value.length > 0
-    case 4: return nickname.value.trim().length >= 2
-    case 5: return true
+    case 0: return true
+    case 1: return agreedToRules.value
+    case 2: return age.value >= 14 && age.value <= 99
+    case 3: return gender.value !== ''
+    case 4: return selectedTopics.value.length > 0
+    case 5: return nickname.value.trim().length >= 2
+    case 6: return true
     default: return false
   }
 })
@@ -43,7 +41,7 @@ function toggleTopic(topic: string) {
 }
 
 function nextStep() {
-  if (canProceed.value && step.value < 5) step.value++
+  if (canProceed.value && step.value < 6) step.value++
 }
 
 function prevStep() {
@@ -60,6 +58,7 @@ async function submit() {
       gender: gender.value,
       topics: selectedTopics.value,
       agreed_to_rules: true,
+      app_language: appLanguage.value,
     })
     router.push('/')
   } catch (e: any) {
@@ -75,19 +74,28 @@ async function submit() {
     <!-- Cyber Progress Bar -->
     <div class="progress-container">
       <div class="progress-bar">
-        <div class="progress-fill" :style="{ width: `${((step + 1) / 6) * 100}%` }"></div>
+      <div class="progress-fill" :style="{ width: `${((step + 1) / 7) * 100}%` }"></div>
       </div>
-      <div class="progress-text neon-text">SYS.INIT.{{ step + 1 }}/6</div>
+      <div class="progress-text neon-text">SYS.INIT.{{ step + 1 }}/7</div>
+    </div>
+
+    <!-- Step 0: interface language, before any other app content -->
+    <div v-if="step === 0" class="step slide-up">
+      <div class="cyber-icon neon-text">🌐</div>
+      <h2 class="neon-text">{{ t('chooseLanguage') }}</h2>
+      <div class="gender-grid">
+        <div v-for="lang in languageOptions" :key="lang[0]" class="glass-card gender-card" :class="{ active: appLanguage === lang[0] }" @click="setAppLanguage(lang[0])"><span>{{ lang[1] }}</span></div>
+      </div>
     </div>
 
     <!-- Step 0: Rules -->
-    <div v-if="step === 0" class="step slide-up">
+    <div v-if="step === 1" class="step slide-up">
       <div class="cyber-icon neon-text">⚠</div>
       <h2 class="neon-text">USER_AGREEMENT</h2>
       
       <div class="glass-card rules-box">
         <ul>
-          <li>Access restricted to users <strong>18+</strong></li>
+          <li>Access restricted to users <strong>14+</strong></li>
           <li>No spam, scams, or abuse</li>
           <li>Violations result in permanent ban</li>
         </ul>
@@ -96,24 +104,24 @@ async function submit() {
       <label class="cyber-checkbox">
         <input type="checkbox" v-model="agreedToRules" />
         <span class="checkmark neon-border"></span>
-        <span class="label-text">I am 18+ and agree to the rules</span>
+        <span class="label-text">I am 14+ and agree to the rules</span>
       </label>
     </div>
 
     <!-- Step 1: Age -->
-    <div v-if="step === 1" class="step slide-up">
+    <div v-if="step === 2" class="step slide-up">
       <div class="cyber-icon neon-text">AGE</div>
       <h2 class="neon-text">INPUT_AGE</h2>
       <div class="age-selector">
-        <button class="btn-ghost" @click="age = Math.max(18, age - 1)">-</button>
+        <button class="btn-ghost" @click="age = Math.max(14, age - 1)">-</button>
         <div class="age-display neon-text">{{ age }}</div>
         <button class="btn-ghost" @click="age = Math.min(99, age + 1)">+</button>
       </div>
-      <input type="range" v-model.number="age" min="18" max="99" class="cyber-range" />
+      <input type="range" v-model.number="age" min="14" max="99" class="cyber-range" />
     </div>
 
     <!-- Step 2: Gender -->
-    <div v-if="step === 2" class="step slide-up">
+    <div v-if="step === 3" class="step slide-up">
       <div class="cyber-icon neon-text">SEX</div>
       <h2 class="neon-text">SELECT_GENDER</h2>
       <div class="gender-grid">
@@ -129,24 +137,24 @@ async function submit() {
     </div>
 
     <!-- Step 3: Topics -->
-    <div v-if="step === 3" class="step slide-up">
+    <div v-if="step === 4" class="step slide-up">
       <div class="cyber-icon neon-text">TAGS</div>
       <h2 class="neon-text">SELECT_INTERESTS</h2>
       <div class="topics-container">
         <div 
           v-for="topic in availableTopics" 
-          :key="topic"
+          :key="topic.id"
           class="topic-tag glass-card"
-          :class="{ active: selectedTopics.includes(topic) }"
-          @click="toggleTopic(topic)"
+          :class="{ active: selectedTopics.includes(topic.id) }"
+          @click="toggleTopic(topic.id)"
         >
-          {{ topic }}
+          {{ topic.icon }} {{ topic[appLanguage] }}
         </div>
       </div>
     </div>
 
     <!-- Step 4: Nickname -->
-    <div v-if="step === 4" class="step slide-up">
+    <div v-if="step === 5" class="step slide-up">
       <div class="cyber-icon neon-text">ID</div>
       <h2 class="neon-text">ENTER_ALIAS</h2>
       <input 
@@ -159,7 +167,7 @@ async function submit() {
     </div>
 
     <!-- Step 5: Confirm -->
-    <div v-if="step === 5" class="step slide-up">
+    <div v-if="step === 6" class="step slide-up">
       <div class="cyber-icon neon-text">OK</div>
       <h2 class="neon-text">CONFIRM_DATA</h2>
       <div class="glass-card summary-card">
@@ -168,7 +176,7 @@ async function submit() {
         <div class="s-row"><span>SEX:</span> <span class="neon-text">{{ gender.toUpperCase() }}</span></div>
         <div class="s-row"><span>TAGS:</span> 
           <div class="s-tags">
-            <span v-for="t in selectedTopics" :key="t" class="s-tag">{{ t }}</span>
+            <span v-for="t in selectedTopics" :key="t" class="s-tag">{{ topicOptions.find(topic => topic.id === t)?.icon }} {{ topicOptions.find(topic => topic.id === t)?.[appLanguage] }}</span>
           </div>
         </div>
       </div>
@@ -180,8 +188,8 @@ async function submit() {
       <button v-if="step > 0" class="btn-ghost" @click="prevStep">&lt; BACK</button>
       <div v-else></div>
       
-      <button v-if="step < 5" class="btn-neon" :disabled="!canProceed" @click="nextStep">NEXT &gt;</button>
-      <button v-if="step === 5" class="btn-neon" :disabled="loading" @click="submit">
+      <button v-if="step < 6" class="btn-neon" :disabled="!canProceed" @click="nextStep">{{ step === 0 ? t('continue') : 'NEXT >' }}</button>
+      <button v-if="step === 6" class="btn-neon" :disabled="loading" @click="submit">
         {{ loading ? 'PROCESSING...' : 'EXECUTE' }}
       </button>
     </div>

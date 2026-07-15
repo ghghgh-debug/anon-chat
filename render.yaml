@@ -70,3 +70,14 @@ services:
           envVarKey: CENTRIFUGO_HMAC_SECRET
       - key: CENTRIFUGO_ALLOWED_ORIGINS
         value: "*"
+
+  # 5. Frontend Service (Vue.js)
+  - type: web
+    name: anon-chat-frontend
+    plan: starter
+    env: docker
+    dockerfilePath: ./frontend/Dockerfile
+    region: frankfurt
+    envVars:
+      - key: VITE_API_URL
+        value: https://anon-chat-backend.onrender.com

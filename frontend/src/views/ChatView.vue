@@ -3,13 +3,14 @@ import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { chatApi, userApi } from '../api'
 import { connectCentrifugo, subscribeToChannel, disconnectCentrifugo, type ChatMessage } from '../services/centrifugo'
+import { t } from '../i18n'
 
 const router = useRouter()
 const route = useRoute()
 
-const chatId = parseInt(route.params.chatId as string)
-const channel = route.query.channel as string
-const token = route.query.token as string
+const chatId = ref(parseInt(route.params.chatId as string))
+const channel = ref(route.query.channel as string)
+const token = ref(route.query.token as string)
 
 const user = ref<any>(null)
 const messages = ref<ChatMessage[]>([])
@@ -34,13 +35,19 @@ onMounted(async () => {
   try {
     user.value = await userApi.getMe()
     
-    // Connect to chat channel
-    const centrifuge = connectCentrifugo(token)
-    subscribeToChannel(channel, token, handleIncomingMessage)
+    // A user who was waiting receives a room id; resolve it to the shared DB chat.
+    if (isNaN(chatId.value)) {
+      const resolved = await chatApi.resolveRoom(route.params.chatId as string)
+      chatId.value = resolved.chat_id
+      channel.value = resolved.channel
+      token.value = resolved.token
+    }
+    connectCentrifugo(token.value)
+    subscribeToChannel(channel.value, token.value, handleIncomingMessage)
     
     // If it's a real chat ID (not a room UUID), fetch history
-    if (!isNaN(chatId)) {
-      const history = await chatApi.getMessages(chatId)
+    if (!isNaN(chatId.value)) {
+      const history = await chatApi.getMessages(chatId.value)
       messages.value = history.messages || []
       scrollToBottom()
     }
@@ -71,6 +78,9 @@ function handleIncomingMessage(msg: ChatMessage) {
     chatActive.value = false
     chatEndedReason.value = msg.reason || 'manual'
     showRateModal.value = true
+  } else if (msg.event === 'game_question') {
+    messages.value.push({ id: `game-${Date.now()}`, sender_id: 0, type: 'text', content: `🎮 ${msg.content}`, sent_at: new Date().toISOString() } as any)
+    scrollToBottom()
   }
 }
 
@@ -81,7 +91,7 @@ async function sendMessage() {
   
   try {
     await chatApi.sendMessage({
-      chat_id: chatId,
+      chat_id: chatId.value,
       type: 'text',
       content: txt,
     })
@@ -93,7 +103,7 @@ async function sendMessage() {
 function handleInput() {
   if (!isTyping.value) {
     isTyping.value = true
-    chatApi.typing(channel).catch(() => {})
+    chatApi.typing(channel.value).catch(() => {})
   }
   if (typingTimeout) clearTimeout(typingTimeout)
   typingTimeout = window.setTimeout(() => {
@@ -104,7 +114,7 @@ function handleInput() {
 async function endChat() {
   if (!confirm('END_CONNECTION?')) return
   try {
-    await chatApi.endChat(chatId)
+    await chatApi.endChat(chatId.value)
     chatActive.value = false
     showRateModal.value = true
   } catch (e) {
@@ -119,7 +129,7 @@ async function submitReport() {
     const partnerId = partnerMsg ? partnerMsg.sender_id : 0 // Fallback
     
     await chatApi.report({
-      chat_id: chatId,
+      chat_id: chatId.value,
       reported_id: partnerId || 0, // In prod, get this from chat metadata
       category: reportCategory.value,
     })
@@ -137,7 +147,7 @@ async function submitRating() {
     const partnerId = partnerMsg ? partnerMsg.sender_id : 0
     
     await chatApi.rate({
-      chat_id: chatId,
+      chat_id: chatId.value,
       to_user_id: partnerId || 0,
       value: rating.value,
     })
@@ -182,6 +192,7 @@ function formatTime(iso?: string) {
     <!-- Messages -->
     <div class="messages-container" ref="messagesContainer">
       <div class="sys-msg">CONNECTION_ESTABLISHED</div>
+      <div class="chat-hint">{{ t('hint') }}: “Как прошёл твой день?” · {{ t('games') }}</div>
       
       <div 
         v-for="m in messages" 
@@ -205,7 +216,7 @@ function formatTime(iso?: string) {
         v-model="inputMsg" 
         type="text" 
         class="input-neon cyber-input" 
-        placeholder="> input_data..." 
+        :placeholder="`${t('games')} · /pd`"
         @input="handleInput"
         @keyup.enter="sendMessage"
       />
@@ -318,6 +329,7 @@ function formatTime(iso?: string) {
 .sys-msg.alert {
   color: var(--accent-red);
 }
+.chat-hint { text-align: center; font-size: 11px; color: var(--text-secondary); font-family: monospace; padding: 8px 12px; border: 1px dashed var(--border-subtle); border-radius: 8px; }
 
 .message-wrapper {
   display: flex;

@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { chatApi, userApi } from '../api'
 import { connectCentrifugo, subscribeToChannel, disconnectCentrifugo, type ChatMessage } from '../services/centrifugo'
+import { appLanguage, topicOptions, t, type AppLanguage } from '../i18n'
 
 const router = useRouter()
 const status = ref<'filters' | 'searching' | 'matched'>('filters')
@@ -11,9 +12,13 @@ const error = ref('')
 const user = ref<any>(null)
 
 const findGender = ref('any')
-const ageFrom = ref(18)
+const findAgeCategory = ref('any')
+const selectedAgeGroup = ref<'any' | '14-18' | '18+'>('any')
+const ageFrom = ref(14)
 const ageTo = ref(99)
 const vipOnly = ref(false)
+const selectedTopics = ref<string[]>([])
+const chatLanguage = ref<AppLanguage>('ru')
 
 let searchInterval: number | null = null
 const searchCode = ref('')
@@ -41,6 +46,23 @@ function generateCyberCode() {
   return code
 }
 
+function chooseAgeGroup(group: 'any' | '14-18' | '18+') {
+  selectedAgeGroup.value = group
+  // The range is sent to the API and checked against both users' preferences.
+  // Keep the old category neutral so the requested 14–18 range is exact.
+  findAgeCategory.value = 'any'
+  if (group === '14-18') {
+    ageFrom.value = 14
+    ageTo.value = 18
+  } else if (group === '18+') {
+    ageFrom.value = 18
+    ageTo.value = 99
+  } else {
+    ageFrom.value = 14
+    ageTo.value = 99
+  }
+}
+
 async function startSearch() {
   loading.value = true
   error.value = ''
@@ -53,15 +75,18 @@ async function startSearch() {
   try {
     const result = await chatApi.search({
       find_gender: findGender.value,
+      age_category: findAgeCategory.value,
       age_from: ageFrom.value,
       age_to: ageTo.value,
       vip_only: vipOnly.value,
+      topics: selectedTopics.value,
+      chat_language: chatLanguage.value,
     })
 
     if (result.status === 'matched') {
       handleMatch(result.room_key, result.channel, result.token, result.chat_id)
     } else {
-      const centrifuge = connectCentrifugo(result.token)
+      connectCentrifugo(result.token)
       subscribeToChannel(result.channel, result.token, (msg: ChatMessage) => {
         if (msg.event === 'matched') {
           handleMatch(msg.room_key!, msg.channel!, msg.token!)
@@ -81,7 +106,7 @@ function handleMatch(roomKey: string, channel: string, token: string, chatId?: n
   status.value = 'matched'
   if (searchInterval) clearInterval(searchInterval)
   setTimeout(() => {
-    router.push(`/chat/${chatId || roomKey}?channel=${channel}&token=${token}`)
+    router.push(`/chat/${chatId || roomKey}?channel=${channel}&token=${token}&language=${chatLanguage.value}`)
   }, 1500)
 }
 
@@ -121,10 +146,33 @@ async function cancelSearch() {
         </div>
 
         <div class="param-group">
+          <label class="param-label">{{ t('topics').toUpperCase() }}</label>
+          <div class="topics-container">
+            <button v-for="topic in topicOptions" :key="topic.id" class="btn-ghost topic-choice" :class="{ active: selectedTopics.includes(topic.id) }" @click="selectedTopics.includes(topic.id) ? selectedTopics.splice(selectedTopics.indexOf(topic.id), 1) : selectedTopics.push(topic.id)">{{ topic.icon }} {{ topic[appLanguage] }}</button>
+          </div>
+        </div>
+
+        <div class="param-group">
+          <label class="param-label">{{ t('chatLanguage').toUpperCase() }}</label>
+          <div class="btn-group">
+            <button v-for="lang in ([['ru','RU'], ['en','EN'], ['uz','UZ']] as [AppLanguage, string][])" :key="lang[0]" class="btn-ghost" :class="{ active: chatLanguage === lang[0] }" @click="chatLanguage = lang[0]">{{ lang[1] }}</button>
+          </div>
+        </div>
+
+        <div class="param-group">
+          <label class="param-label">AGE_GROUP</label>
+          <div class="btn-group">
+            <button class="btn-ghost" :class="{ active: selectedAgeGroup === 'any' }" @click="chooseAgeGroup('any')">ANY</button>
+            <button class="btn-ghost" :class="{ active: selectedAgeGroup === '14-18' }" @click="chooseAgeGroup('14-18')">14–18</button>
+            <button class="btn-ghost" :class="{ active: selectedAgeGroup === '18+' }" @click="chooseAgeGroup('18+')">18+</button>
+          </div>
+        </div>
+
+        <div class="param-group">
           <label class="param-label">AGE_RANGE: [{{ ageFrom }} - {{ ageTo }}]</label>
           <div class="range-group">
-            <input type="range" v-model.number="ageFrom" min="18" max="99" class="cyber-range" />
-            <input type="range" v-model.number="ageTo" min="18" max="99" class="cyber-range" />
+            <input type="range" v-model.number="ageFrom" min="14" max="99" class="cyber-range" @input="selectedAgeGroup = 'any'" />
+            <input type="range" v-model.number="ageTo" min="14" max="99" class="cyber-range" @input="selectedAgeGroup = 'any'" />
           </div>
         </div>
 
@@ -245,6 +293,9 @@ async function cancelSearch() {
   flex-direction: column;
   gap: 12px;
 }
+.topics-container { display: flex; flex-wrap: wrap; gap: 8px; }
+.topic-choice { padding: 7px 9px; font-size: 11px; }
+.topic-choice.active { border-color: var(--neon-primary); color: var(--neon-bright); }
 
 .cyber-range {
   width: 100%;

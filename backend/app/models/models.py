@@ -11,6 +11,10 @@ class GenderEnum(str, enum.Enum):
     female = "female"
     any = "any"
 
+class AgeCategoryEnum(str, enum.Enum):
+    teen = "teen"  # 14-17
+    adult = "adult"  # 18+
+
 class MessageTypeEnum(str, enum.Enum):
     text = "text"
     photo = "photo"
@@ -31,6 +35,7 @@ class User(Base, TimestampMixin):
     tg_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
     nickname: Mapped[str] = mapped_column(String(50))
     age: Mapped[int] = mapped_column(Integer)
+    age_category: Mapped[AgeCategoryEnum] = mapped_column(Enum(AgeCategoryEnum), default=AgeCategoryEnum.adult)
     gender: Mapped[GenderEnum] = mapped_column(Enum(GenderEnum))
     avatar_url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     bio: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
@@ -38,6 +43,8 @@ class User(Base, TimestampMixin):
     is_premium: Mapped[bool] = mapped_column(Boolean, default=False)
     premium_until: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     chosen_emoji: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    app_language: Mapped[str] = mapped_column(String(2), default="ru")
+    referred_by_referral_id: Mapped[Optional[int]] = mapped_column(ForeignKey("referrals.id"), nullable=True)
     
     likes: Mapped[int] = mapped_column(Integer, default=0)
     dislikes: Mapped[int] = mapped_column(Integer, default=0)
@@ -55,6 +62,7 @@ class Chat(Base, TimestampMixin):
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     ended_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     ended_reason: Mapped[Optional[str]] = mapped_column(String(50), nullable=True) # manual/report/timeout
+    language: Mapped[str] = mapped_column(String(2), default="ru")
 
     messages: Mapped[List["Message"]] = relationship("Message", back_populates="chat")
 
@@ -107,3 +115,19 @@ class Referral(Base, TimestampMixin):
     code: Mapped[str] = mapped_column(String(20), unique=True, index=True)
     created_by_admin_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     uses_count: Mapped[int] = mapped_column(Integer, default=0)
+
+class ReferralClaim(Base, TimestampMixin):
+    """Referral captured from /start until the user finishes onboarding."""
+    __tablename__ = "referral_claims"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tg_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
+    referral_id: Mapped[int] = mapped_column(ForeignKey("referrals.id"))
+
+class AdminLog(Base, TimestampMixin):
+    __tablename__ = "admin_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    admin_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    action: Mapped[str] = mapped_column(String(100))
+    target_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)

@@ -27,7 +27,7 @@ async function buyPremium(type: string) {
     const res = await paymentApi.createInvoice(type)
     
     if (window.Telegram?.WebApp) {
-      window.Telegram.WebApp.openInvoice(res.invoice_url, (status) => {
+      window.Telegram.WebApp.openInvoice(res.invoice_url, (status: string) => {
         if (status === 'paid') {
           // It will be processed by webhook, just reload user after a bit
           setTimeout(async () => {

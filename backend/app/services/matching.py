@@ -44,6 +44,8 @@ class MatchingService:
         Two-sided matching check:
         - Seeker's desired gender matches candidate's actual gender (or 'any')
         - Candidate's desired gender matches seeker's actual gender (or 'any')
+        - Seeker's desired age category matches candidate's actual category (or 'any')
+        - Candidate's desired age category matches seeker's actual category (or 'any')
         - Seeker's age is within candidate's age range
         - Candidate's age is within seeker's age range
         - At least one topic overlaps (if topics provided)
@@ -55,6 +57,15 @@ class MatchingService:
 
         if candidate.get("find_gender", "any") != "any":
             if candidate["find_gender"] != seeker["gender"]:
+                return False
+
+        # Age category check (bidirectional)
+        if seeker.get("find_age_category", "any") != "any":
+            if seeker["find_age_category"] != candidate.get("age_category", "adult"):
+                return False
+
+        if candidate.get("find_age_category", "any") != "any":
+            if candidate["find_age_category"] != seeker.get("age_category", "adult"):
                 return False
 
         # Age check (bidirectional)
@@ -78,6 +89,10 @@ class MatchingService:
             if not seeker_topics.intersection(candidate_topics):
                 return False
 
+        # Chat language is deliberately separate from the interface language.
+        if seeker.get("chat_language", "ru") != candidate.get("chat_language", "ru"):
+            return False
+
         # VIP check: if seeker wants VIP, candidate must be premium too
         if seeker.get("vip_only") and not candidate.get("is_premium"):
             return False
@@ -92,10 +107,13 @@ class MatchingService:
         nickname: str,
         gender: str,
         age: int,
+        age_category: str = "adult",
         find_gender: str = "any",
-        age_from: int = 18,
+        find_age_category: str = "any",
+        age_from: int = 14,
         age_to: int = 99,
         topics: list[str] = None,
+        chat_language: str = "ru",
         is_premium: bool = False,
         vip_only: bool = False,
         blacklist: list[int] = None,
@@ -115,10 +133,13 @@ class MatchingService:
             "nickname": nickname,
             "gender": gender,
             "age": age,
+            "age_category": age_category,
             "find_gender": find_gender,
+            "find_age_category": find_age_category,
             "age_from": age_from,
             "age_to": age_to,
             "topics": topics or [],
+            "chat_language": chat_language,
             "is_premium": is_premium,
             "vip_only": vip_only,
         }
@@ -241,6 +262,16 @@ class MatchingService:
         if data:
             return json.loads(data)
         return None
+
+    async def set_chat_id(self, room_key: str, chat_id: int) -> None:
+        """Attach the persistent chat id so both clients use one live channel."""
+        await self.init_redis()
+        data = await self.redis.get(room_key)
+        if not data:
+            return
+        room = json.loads(data)
+        room["chat_id"] = chat_id
+        await self.redis.set(room_key, json.dumps(room), ex=self.settings.CENTRIFUGO_TOKEN_TTL)
 
     async def get_online_count(self) -> int:
         """

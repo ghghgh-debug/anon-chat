@@ -53,19 +53,19 @@ async function generateRef() {
       <!-- Stats -->
       <div class="stats-grid slide-up">
         <div class="glass-card stat-box">
-          <div class="s-val">{{ stats.total_users }}</div>
+          <div class="s-val">{{ stats.users.total }}</div>
           <div class="s-lbl">TOTAL_USERS</div>
         </div>
         <div class="glass-card stat-box">
-          <div class="s-val">{{ stats.premium_users }}</div>
+          <div class="s-val">{{ stats.users.premium }}</div>
           <div class="s-lbl">VIP_USERS</div>
         </div>
         <div class="glass-card stat-box">
-          <div class="s-val">{{ stats.active_chats }}</div>
+          <div class="s-val">{{ stats.chats.active_now }}</div>
           <div class="s-lbl">ACTIVE_CONNS</div>
         </div>
         <div class="glass-card stat-box">
-          <div class="s-val" style="color: var(--accent-red)">{{ stats.total_reports }}</div>
+          <div class="s-val" style="color: var(--accent-red)">{{ stats.reports.open }}</div>
           <div class="s-lbl">REPORTS</div>
         </div>
       </div>

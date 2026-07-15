@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { userApi, chatApi } from '../api'
+import { setAppLanguage } from '../i18n'
 
 const router = useRouter()
 const user = ref<any>(null)
@@ -14,6 +15,7 @@ let heartbeatInterval: number | null = null
 onMounted(async () => {
   try {
     user.value = await userApi.getMe()
+    if (user.value.app_language) setAppLanguage(user.value.app_language)
     const online = await chatApi.getOnlineCount()
     onlineCount.value = online.online
 

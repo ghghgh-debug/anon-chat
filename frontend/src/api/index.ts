@@ -50,6 +50,7 @@ export const userApi = {
     avatar_url?: string
     bio?: string
     agreed_to_rules: boolean
+    app_language: 'ru' | 'en' | 'uz'
   }) => request<any>('/users/onboarding', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -75,10 +76,12 @@ export const userApi = {
 export const chatApi = {
   search: (filters: {
     find_gender?: string
+    age_category?: string
     age_from?: number
     age_to?: number
     topics?: string[]
     vip_only?: boolean
+    chat_language?: 'ru' | 'en' | 'uz'
   }) => request<any>('/chat/search', {
     method: 'POST',
     body: JSON.stringify(filters),
@@ -123,6 +126,8 @@ export const chatApi = {
 
   getMessages: (chatId: number, limit = 50, offset = 0) =>
     request<any>(`/chat/messages/${chatId}?limit=${limit}&offset=${offset}`),
+
+  resolveRoom: (roomId: string) => request<any>(`/chat/room/${roomId}`),
 
   getOnlineCount: () => request<any>('/chat/online-count'),
 

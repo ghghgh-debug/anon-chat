@@ -21,13 +21,14 @@ class ChatService:
         self.settings = get_settings()
 
     async def create_chat(
-        self, db: AsyncSession, user_a_id: int, user_b_id: int
+        self, db: AsyncSession, user_a_id: int, user_b_id: int, language: str = "ru"
     ) -> Chat:
         """Create a new chat record in the database."""
         chat = Chat(
             user_a_id=user_a_id,
             user_b_id=user_b_id,
             started_at=datetime.now(timezone.utc),
+            language=language,
         )
         db.add(chat)
         await db.flush()
@@ -50,6 +51,8 @@ class ChatService:
             return None
 
         now = datetime.now(timezone.utc)
+        if chat.ended_at:
+            return chat
         chat.ended_at = now
         chat.ended_reason = reason
 
@@ -161,6 +164,16 @@ class ChatService:
             )
             .order_by(Chat.started_at.desc())
             .limit(1)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_chat_for_user(self, db: AsyncSession, chat_id: int, user_id: int) -> Optional[Chat]:
+        """Return a chat only if the requesting user is one of its participants."""
+        result = await db.execute(
+            select(Chat).where(
+                Chat.id == chat_id,
+                or_(Chat.user_a_id == user_id, Chat.user_b_id == user_id),
+            )
         )
         return result.scalar_one_or_none()
 

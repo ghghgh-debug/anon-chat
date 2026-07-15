@@ -5,7 +5,8 @@
  * match notifications, and typing indicators.
  */
 
-import { Centrifuge, Subscription, PublicationContext } from 'centrifuge'
+import { Centrifuge, Subscription } from 'centrifuge'
+import type { PublicationContext } from 'centrifuge'
 
 const CENTRIFUGO_URL = import.meta.env.VITE_CENTRIFUGO_URL || 'ws://localhost:8000/connection/websocket'
 

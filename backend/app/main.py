@@ -11,6 +11,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
+from sqlalchemy import inspect, text
 import os
 import time
 
@@ -71,12 +72,23 @@ async def lifespan(app: FastAPI):
     # Create database tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
+        # This project uses metadata creation rather than Alembic. Keep existing
+        # deployments compatible when adding small, nullable/defaulted fields.
+        def add_missing_columns(sync_conn):
+            columns = {table: {col["name"] for col in inspect(sync_conn).get_columns(table)} for table in ("users", "chats")}
+            if "app_language" not in columns["users"]:
+                sync_conn.execute(text("ALTER TABLE users ADD COLUMN app_language VARCHAR(2) NOT NULL DEFAULT 'ru'"))
+            if "referred_by_referral_id" not in columns["users"]:
+                sync_conn.execute(text("ALTER TABLE users ADD COLUMN referred_by_referral_id INTEGER"))
+            if "language" not in columns["chats"]:
+                sync_conn.execute(text("ALTER TABLE chats ADD COLUMN language VARCHAR(2) NOT NULL DEFAULT 'ru'"))
+        await conn.run_sync(add_missing_columns)
+
     # Create upload directory
     os.makedirs(settings.MEDIA_UPLOAD_DIR, exist_ok=True)
-    
+
     yield
-    
+
     # Cleanup
     from app.services.matching import matching_service
     await matching_service.close()

@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { userApi } from '../api'
+import { setAppLanguage, type AppLanguage, t } from '../i18n'
 
 const router = useRouter()
 const user = ref<any>(null)
@@ -11,8 +12,9 @@ const error = ref('')
 const isEditing = ref(false)
 const editData = ref({
   nickname: '',
-  age: 18,
-  bio: '',
+  age: 14,
+    bio: '',
+    app_language: 'ru' as AppLanguage,
 })
 
 onMounted(async () => {
@@ -26,6 +28,7 @@ async function loadUser() {
       nickname: user.value.nickname,
       age: user.value.age,
       bio: user.value.bio || '',
+      app_language: user.value.app_language || 'ru',
     }
   } catch (e: any) {
     error.value = e.message
@@ -38,6 +41,7 @@ async function saveProfile() {
   loading.value = true
   try {
     await userApi.updateProfile(editData.value)
+    setAppLanguage(editData.value.app_language)
     isEditing.value = false
     await loadUser()
   } catch (e: any) {
@@ -108,6 +112,7 @@ function formatTime(seconds: number): string {
           <div class="i-row"><span>AGE:</span> <span class="neon-text">{{ user.age }}</span></div>
           <div class="i-row"><span>SEX:</span> <span class="neon-text">{{ user.gender.toUpperCase() }}</span></div>
           <div class="i-row"><span>BIO:</span> <span class="neon-text">{{ user.bio || 'null' }}</span></div>
+          <div class="i-row"><span>{{ t('language').toUpperCase() }}:</span> <span class="neon-text">{{ user.app_language?.toUpperCase() }}</span></div>
         </div>
 
         <div v-else class="edit-view slide-up">
@@ -122,6 +127,10 @@ function formatTime(seconds: number): string {
           <div class="input-group">
             <label>BIO</label>
             <textarea v-model="editData.bio" class="input-neon cyber-input" rows="3"></textarea>
+          </div>
+          <div class="input-group">
+            <label>{{ t('language').toUpperCase() }}</label>
+            <select v-model="editData.app_language" class="input-neon cyber-input"><option value="ru">Русский</option><option value="en">English</option><option value="uz">O'zbekcha</option></select>
           </div>
           
           <p v-if="error" style="color: var(--accent-red)">ERR: {{ error }}</p>
