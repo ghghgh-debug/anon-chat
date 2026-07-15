@@ -70,7 +70,7 @@ class UserService:
         self, db: AsyncSession, user_id: int, data: dict
     ) -> Optional[User]:
         """Update user profile fields. Only allows safe fields."""
-        allowed_fields = {"nickname", "age", "gender", "avatar_url", "bio", "chosen_emoji"}
+        allowed_fields = {"nickname", "age", "gender", "avatar_url", "bio", "chosen_emoji", "age_category", "app_language"}
         safe_data = {k: v for k, v in data.items() if k in allowed_fields}
         if not safe_data:
             return None
