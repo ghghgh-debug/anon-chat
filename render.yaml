@@ -2,14 +2,14 @@ databases:
   - name: anon-chat-db
     databaseName: anon_chat
     user: anon_user
-    plan: basic-4gb # Upgraded to 4GB RAM / 2 CPU for production query load
+    plan: basic-1gb # Swapped to the budget-friendly 1GB RAM plan (approx. $20/mo)
     postgresMajorVersion: "15"
     ipAllowList:
       - source: 0.0.0.0/0
         description: everywhere
 
 services:
-  # 1. Redis Cache (Upgraded to Standard 1GB for pub/sub performance)
+  # 1. Redis Cache
   - type: keyvalue
     name: anon-chat-redis
     plan: standard
@@ -17,10 +17,10 @@ services:
       - source: 0.0.0.0/0
         description: everywhere
 
-  # 2. FastAPI Backend Service (3 Replicas on Standard plan)
+  # 2. FastAPI Backend Service (3 Replicas)
   - type: web
     name: anon-chat-backend
-    plan: standard # 2 GB RAM, 1 CPU per instance
+    plan: standard
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     region: frankfurt
@@ -46,10 +46,10 @@ services:
       - key: CENTRIFUGO_HMAC_SECRET
         generateValue: true
 
-  # 3. Centrifugo Service (WebSocket Engine)
+  # 3. Centrifugo Service
   - type: web
     name: anon-chat-centrifugo
-    plan: standard # Upgraded to Standard to easily support 5k+ concurrent WebSockets
+    plan: standard
     runtime: docker
     dockerfilePath: ./Dockerfile.centrifugo
     region: frankfurt
