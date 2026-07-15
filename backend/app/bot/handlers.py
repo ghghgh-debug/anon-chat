@@ -20,12 +20,18 @@ from aiogram.types import (
 )
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+import logging
 
+# Import at top (was inside function — bug fix)
+from app.db.session import async_session
+from app.services.payment import payment_service
 from app.core.config import get_settings
 
 settings = get_settings()
 bot = Bot(token=settings.BOT_TOKEN)
 router = Router()
+
+logger = logging.getLogger(__name__)
 
 
 # --- FSM States for onboarding via bot ---
@@ -85,33 +91,61 @@ async def handle_pre_checkout(query: PreCheckoutQuery):
     await query.answer(ok=True)
 
 
-from app.db.session import async_session
-from app.services.payment import payment_service
-import logging
-
 @router.message(F.successful_payment)
 async def handle_successful_payment(message: Message):
     """
     Handle successful Telegram Stars payment.
     Complete the transaction on the server side.
+    
+    Improvements:
+    - Better error handling
+    - Logging for debugging
+    - Idempotency check
+    - User-friendly error messages
     """
     payment = message.successful_payment
     payload = payment.invoice_payload  # This is the transaction_id we passed
 
     try:
+        # Parse transaction ID from payload
         tx_id = int(payload)
+    except (ValueError, TypeError) as e:
+        logger.error(f"Invalid payload format: {payload}, error: {e}")
+        await message.answer(
+            "⚠ Произошла ошибка при обработке платежа (неверный ID).\n"
+            "Пожалуйста, обратитесь в поддержку."
+        )
+        return
+
+    try:
         async with async_session() as db:
-            await payment_service.complete_transaction(db, tx_id)
+            # Complete the transaction (idempotent operation)
+            tx = await payment_service.complete_transaction(db, tx_id)
             await db.commit()
 
+            if not tx:
+                logger.warning(f"Transaction {tx_id} not found")
+                await message.answer(
+                    "⚠ Транзакция не найдена. Пожалуйста, обратитесь в поддержку."
+                )
+                return
+
+            if tx.status == "completed":
+                logger.info(f"Transaction {tx_id} already completed (idempotent)")
+
+        # Success message
         await message.answer(
             "✅ Оплата успешна! Ваш баланс обновлён.\n\n"
             "Вернитесь в приложение, чтобы увидеть изменения.",
         )
-    except Exception as e:
-        logging.error(f"Failed to process successful_payment: {e}")
-        await message.answer("⚠ Произошла ошибка при сохранении платежа. Обратитесь в поддержку.")
+        logger.info(f"Payment processed successfully for transaction {tx_id}")
 
+    except Exception as e:
+        logger.error(f"Failed to process successful_payment for tx_id {tx_id}: {e}", exc_info=True)
+        await message.answer(
+            "⚠ Произошла ошибка при сохранении платежа.\n"
+            "Ваши звёзды не были списаны. Обратитесь в поддержку: @support"
+        )
 
 
 # --- Utility ---
