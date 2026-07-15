@@ -4,103 +4,82 @@ databases:
     user: anon_user
     plan: standard
     postgresMajorVersion: "15"
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: everywhere
 
 services:
-  # Redis
+  # 1. Redis Cache (Render Key-Value Service)
   - type: keyvalue
     name: anon-chat-redis
     plan: standard
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: everywhere
 
-  # FastAPI Backend
+  # 2. FastAPI Backend Service (Scaled to 3 replicas for high availability)
   - type: web
     name: anon-chat-backend
+    plan: standard
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
-    plan: standard
+    numReplicas: 3
     region: frankfurt
-
     envVars:
       - key: BOT_TOKEN
-        sync: false
-
+        sync: false # Must be set manually in Render Dashboard (get from @BotFather)
       - key: WEBAPP_URL
-        fromService:
-          type: web
-          name: anon-chat-frontend
-          property: url
-
+        value: https://anon-chat-frontend.onrender.com
       - key: DATABASE_URL
         fromDatabase:
           name: anon-chat-db
           property: connectionString
-
       - key: REDIS_URL
         fromService:
           type: keyvalue
           name: anon-chat-redis
           property: connectionString
-
       - key: CENTRIFUGO_URL
-        fromService:
-          type: web
-          name: anon-chat-centrifugo
-          property: url
-
+        value: http://anon-chat-centrifugo:8000
       - key: CENTRIFUGO_API_KEY
         generateValue: true
-
       - key: CENTRIFUGO_HMAC_SECRET
         generateValue: true
 
-  # Centrifugo
+  # 3. Centrifugo Service (WebSocket engine handling 5k+ concurrent client connections)
   - type: web
     name: anon-chat-centrifugo
+    plan: standard
     runtime: docker
     dockerfilePath: ./Dockerfile.centrifugo
-    plan: standard
+    port: 8000
     region: frankfurt
-
     envVars:
       - key: CENTRIFUGO_ADMIN_PASSWORD
         generateValue: true
-
       - key: CENTRIFUGO_ADMIN_SECRET
         generateValue: true
-
       - key: CENTRIFUGO_API_KEY
         fromService:
           type: web
           name: anon-chat-backend
           envVarKey: CENTRIFUGO_API_KEY
-
       - key: CENTRIFUGO_TOKEN_HMAC_SECRET_KEY
         fromService:
           type: web
           name: anon-chat-backend
           envVarKey: CENTRIFUGO_HMAC_SECRET
-
       - key: CENTRIFUGO_ALLOWED_ORIGINS
         value: "*"
 
-  # Frontend
-  - type: web
+  # 4. Vue/Vite Frontend (Static Web App - Free & handles unlimited traffic)
+  - type: static
     name: anon-chat-frontend
-    runtime: static
-    rootDir: frontend
-    buildCommand: npm install && npm run build
-    staticPublishPath: dist
     plan: starter
-    region: frankfurt
-
+    buildCommand: npm run build
+    publishPath: dist
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: anon-chat-backend
-          property: url
-
+        value: https://anon-chat-backend.onrender.com
       - key: VITE_CENTRIFUGO_URL
-        fromService:
-          type: web
-          name: anon-chat-centrifugo
-          property: url
+        value: https://anon-chat-centrifugo.onrender.com
