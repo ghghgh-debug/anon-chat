@@ -69,8 +69,15 @@ async def rate_limit_middleware(request: Request, call_next):
 async def lifespan(app: FastAPI):
     """Application startup and shutdown events."""
     # Create database tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as e:
+        import traceback
+        import logging
+        logger = logging.getLogger("uvicorn.error")
+        logger.error(f"Warning: Failed to connect to database or create tables on startup: {e}")
+        traceback.print_exc()
     
     # Create upload directory
     os.makedirs(settings.MEDIA_UPLOAD_DIR, exist_ok=True)

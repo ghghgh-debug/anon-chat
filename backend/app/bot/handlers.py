@@ -56,6 +56,15 @@ class OnboardingStates(StatesGroup):
 @router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
     """Handle /start — show welcome and WebApp button."""
+    # Determine user language from profile settings
+    lang = "ru"  # Default fallback
+    if message.from_user and message.from_user.language_code:
+        user_lang = message.from_user.language_code.lower()
+        if user_lang.startswith("uz"):
+            lang = "uz"
+        elif user_lang.startswith("en"):
+            lang = "en"
+
     # Check for referral code
     args = message.text.split()
     if len(args) > 1 and args[1].startswith("ref_"):
@@ -71,20 +80,22 @@ async def cmd_start(message: Message, state: FSMContext):
                 if not claim:
                     db.add(ReferralClaim(tg_id=message.from_user.id, referral_id=referral.id))
                     await db.commit()
+
+                # Send referral saved message in the user's language
+                if lang == "uz":
+                    ref_msg = "👋 Xush kelibsiz! Taklif havolasi saqlandi."
+                elif lang == "en":
+                    ref_msg = "👋 Welcome! Referral link saved."
+                else:
+                    ref_msg = "👋 Добро пожаловать! Реферальная ссылка сохранена."
+
                 try:
-                    await message.answer(
-                        "👋 Добро пожаловать! Реферальная ссылка сохранена.\n"
-                        "👋 Welcome! Referral link saved.\n"
-                        "👋 Xush kelibsiz! Taklif havolasi saqlandi."
-                    )
+                    await message.answer(ref_msg)
                 except Exception as e:
                     logger.error(f"Error answering referral saved message: {e}")
 
     # Determine if user is admin
     is_admin = message.from_user.id in settings.ADMIN_IDS
-    greeting_ru = "👋 Привет, админ!" if is_admin else "👋 Привет!"
-    greeting_en = "👋 Hello, admin!" if is_admin else "👋 Hello!"
-    greeting_uz = "👋 Salom, admin!" if is_admin else "👋 Salom!"
 
     # 1. First send the welcome GIF
     try:
@@ -99,37 +110,58 @@ async def cmd_start(message: Message, state: FSMContext):
     except Exception as e:
         logger.error(f"Error sending welcome GIF: {e}", exc_info=True)
 
-    # 2. After greeting message in Russian, English, and Uzbek
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text="🚀 Открыть / Open / Ochish",
-            web_app=WebAppInfo(url=settings.WEBAPP_URL),
-        )],
-    ])
-
-    greeting_text = (
-        f"{greeting_ru} Добро пожаловать в **Masco Bot**!\n\n"
-        "🔮 **Masco Bot** — найди случайного собеседника по интересам!\n"
-        "• 💬 Текст, фото, видео, голосовые\n"
-        "• ⭐ Система репутации\n"
-        "• 👑 Premium-возможности\n"
-        "• 🛡 Модерация и безопасность\n\n"
-        "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n"
-        f"{greeting_en} Welcome to **Masco Bot**!\n\n"
-        "🔮 **Masco Bot** — find a random chat partner by interests!\n"
-        "• 💬 Text, photo, video, voice notes\n"
-        "• ⭐ Reputation system\n"
-        "• 👑 Premium features\n"
-        "• 🛡 Moderation & safety\n\n"
-        "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n"
-        f"{greeting_uz} **Masco Bot**-ga xush kelibsiz!\n\n"
-        "🔮 **Masco Bot** — qiziqishlaringiz bo'yicha tasodifiy suhbatdosh toping!\n"
-        "• 💬 Matn, rasm, video, ovozli xabarlar\n"
-        "• ⭐ Obro' (reputatsiya) tizimi\n"
-        "• 👑 Premium imkoniyatlar\n"
-        "• 🛡 Moderatsiya va xavfsizlik\n\n"
-        "Нажми кнопку ниже, чтобы начать! / Click the button below to start! / Boshlash uchun pastdagi tugmani bosing!"
-    )
+    # 2. Prepare localized welcome message and keyboard
+    if lang == "uz":
+        greeting = "👋 Salom, admin!" if is_admin else "👋 Salom!"
+        greeting_text = (
+            f"{greeting} **Masco Bot**-ga xush kelibsiz!\n\n"
+            "🔮 **Masco Bot** — qiziqishlaringiz bo'yicha tasodifiy suhbatdosh toping!\n"
+            "• 💬 Matn, rasm, video, ovozli xabarlar\n"
+            "• ⭐ Obro' (reputatsiya) tizimi\n"
+            "• 👑 Premium imkoniyatlar\n"
+            "• 🛡 Moderatsiya va xavfsizlik\n\n"
+            "Boshlash uchun pastdagi tugmani bosing!"
+        )
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text="🚀 Ochish",
+                web_app=WebAppInfo(url=settings.WEBAPP_URL),
+            )],
+        ])
+    elif lang == "en":
+        greeting = "👋 Hello, admin!" if is_admin else "👋 Hello!"
+        greeting_text = (
+            f"{greeting} Welcome to **Masco Bot**!\n\n"
+            "🔮 **Masco Bot** — find a random chat partner by interests!\n"
+            "• 💬 Text, photo, video, voice notes\n"
+            "• ⭐ Reputation system\n"
+            "• 👑 Premium features\n"
+            "• 🛡 Moderation & safety\n\n"
+            "Click the button below to start!"
+        )
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text="🚀 Open",
+                web_app=WebAppInfo(url=settings.WEBAPP_URL),
+            )],
+        ])
+    else:  # Default to Russian
+        greeting = "👋 Привет, админ!" if is_admin else "👋 Привет!"
+        greeting_text = (
+            f"{greeting} Добро пожаловать в **Masco Bot**!\n\n"
+            "🔮 **Masco Bot** — найди случайного собеседника по интересам!\n"
+            "• 💬 Текст, фото, видео, голосовые\n"
+            "• ⭐ Система репутации\n"
+            "• 👑 Premium-возможности\n"
+            "• 🛡 Модерация и безопасность\n\n"
+            "Нажми кнопку ниже, чтобы начать!"
+        )
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text="🚀 Открыть",
+                web_app=WebAppInfo(url=settings.WEBAPP_URL),
+            )],
+        ])
 
     await message.answer(
         greeting_text,
