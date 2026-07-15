@@ -136,14 +136,17 @@ app = FastAPI(
 # CORS — Restrict to frontend domain only (security fix)
 # Combine configured ALLOWED_ORIGINS with WEBAPP_URL if available,
 # and support dynamic matching for Render subdomains / local dev hosts.
-allowed_origins = list(settings.ALLOWED_ORIGINS)
-if settings.WEBAPP_URL and settings.WEBAPP_URL not in allowed_origins:
-    allowed_origins.append(settings.WEBAPP_URL)
+# Strips trailing slashes to match browser Origin headers.
+allowed_origins = [orig.rstrip("/") for orig in settings.ALLOWED_ORIGINS]
+if settings.WEBAPP_URL:
+    stripped_webapp_url = settings.WEBAPP_URL.rstrip("/")
+    if stripped_webapp_url not in allowed_origins:
+        allowed_origins.append(stripped_webapp_url)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_origin_regex=r"https://.*\.onrender\.com|https?://localhost(:\d+)?|https?://127\.0\.0\.1(:\d+)?",
+    allow_origin_regex=r"https?://.*\.onrender\.com|https?://localhost(:\d+)?|https?://127\.0\.0\.1(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
