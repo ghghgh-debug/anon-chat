@@ -1,0 +1,327 @@
+/* ============================================================
+   ANON CHAT TMA — Neon Violet / Cyberpunk Design System
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+  /* ── Neon Violet Core Palette ── */
+  --neon-primary: #a855f7;
+  --neon-bright: #c084fc;
+  --neon-hot: #d946ef;
+  --neon-electric: #e879f9;
+  --neon-glow: rgba(168, 85, 247, 0.6);
+  --neon-glow-hot: rgba(217, 70, 239, 0.5);
+
+  /* ── Accent Colors ── */
+  --accent-cyan: #22d3ee;
+  --accent-green: #34d399;
+  --accent-red: #f43f5e;
+  --accent-gold: #fbbf24;
+  --accent-pink: #f472b6;
+
+  /* ── Backgrounds ── */
+  --bg-deep: #09090b;
+  --bg-card: rgba(15, 10, 30, 0.85);
+  --bg-card-hover: rgba(25, 18, 50, 0.9);
+  --bg-glass: rgba(168, 85, 247, 0.06);
+  --bg-glass-strong: rgba(168, 85, 247, 0.12);
+  --bg-input: rgba(20, 14, 40, 0.8);
+
+  /* ── Borders ── */
+  --border-subtle: rgba(168, 85, 247, 0.15);
+  --border-glow: rgba(168, 85, 247, 0.35);
+  --border-bright: rgba(168, 85, 247, 0.6);
+
+  /* ── Text ── */
+  --text-primary: #f4f0ff;
+  --text-secondary: rgba(244, 240, 255, 0.65);
+  --text-muted: rgba(244, 240, 255, 0.4);
+
+  /* ── Shadows ── */
+  --shadow-neon: 0 0 15px rgba(168, 85, 247, 0.3), 0 0 60px rgba(168, 85, 247, 0.1);
+  --shadow-neon-strong: 0 0 20px rgba(168, 85, 247, 0.5), 0 0 80px rgba(168, 85, 247, 0.2);
+  --shadow-neon-hot: 0 0 20px rgba(217, 70, 239, 0.4), 0 0 60px rgba(217, 70, 239, 0.15);
+  --shadow-card: 0 4px 30px rgba(0, 0, 0, 0.4);
+
+  /* ── Gradients ── */
+  --gradient-neon: linear-gradient(135deg, #7c3aed, #a855f7, #d946ef);
+  --gradient-neon-h: linear-gradient(90deg, #7c3aed, #a855f7, #d946ef);
+  --gradient-bg: linear-gradient(180deg, #09090b 0%, #0c0618 40%, #120a28 100%);
+  --gradient-card: linear-gradient(135deg, rgba(124, 58, 237, 0.08), rgba(217, 70, 239, 0.04));
+
+  /* ── Spacing ── */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+}
+
+/* ── Reset & Base ── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+body {
+  background: var(--gradient-bg);
+  background-attachment: fixed;
+}
+
+/* ── Animated Background Grid ── */
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image:
+    linear-gradient(rgba(168, 85, 247, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(168, 85, 247, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Floating Orbs (ambient glow) ── */
+
+body::after {
+  content: '';
+  position: fixed;
+  top: -200px;
+  right: -200px;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.12) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  animation: floatOrb 15s ease-in-out infinite alternate;
+}
+
+@keyframes floatOrb {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(-80px, 120px); }
+}
+
+#app {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
+/* ── Scrollbar ── */
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.3);
+  border-radius: 4px;
+}
+
+/* ── Utility Classes ── */
+
+.neon-text {
+  background: var(--gradient-neon);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.neon-border {
+  border: 1px solid var(--border-glow);
+  box-shadow: var(--shadow-neon);
+}
+
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  transition: all 0.25s ease;
+}
+
+.glass-card:hover {
+  border-color: var(--border-glow);
+  background: var(--bg-card-hover);
+}
+
+/* ── Neon Button Styles ── */
+
+.btn-neon {
+  position: relative;
+  padding: 14px 28px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--gradient-neon);
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.25s ease;
+  box-shadow: var(--shadow-neon);
+  letter-spacing: 0.3px;
+}
+
+.btn-neon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent 50%);
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+.btn-neon:hover::before {
+  opacity: 1;
+}
+
+.btn-neon:active {
+  transform: scale(0.97);
+  box-shadow: var(--shadow-neon-strong);
+}
+
+.btn-neon:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-ghost {
+  padding: 12px 24px;
+  border: 1px solid var(--border-glow);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--neon-bright);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.btn-ghost:hover {
+  background: var(--bg-glass);
+  box-shadow: var(--shadow-neon);
+}
+
+.btn-ghost:active {
+  transform: scale(0.97);
+}
+
+/* ── Input Styles ── */
+
+.input-neon {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  outline: none;
+  transition: all 0.25s ease;
+}
+
+.input-neon:focus {
+  border-color: var(--neon-primary);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15), var(--shadow-neon);
+}
+
+.input-neon::placeholder {
+  color: var(--text-muted);
+}
+
+/* ── Animations ── */
+
+@keyframes neonPulse {
+  0%, 100% { box-shadow: var(--shadow-neon); }
+  50% { box-shadow: var(--shadow-neon-strong); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes glowBreathe {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease forwards;
+}
+
+.slide-up {
+  animation: slideUp 0.5s ease forwards;
+}
+
+/* ── Badge Styles ── */
+
+.badge-premium {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(217, 70, 239, 0.2));
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-gold);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.badge-online {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: rgba(52, 211, 153, 0.1);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  color: var(--accent-green);
+}
+
+.badge-online::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-green);
+  box-shadow: 0 0 8px var(--accent-green);
+  animation: glowBreathe 2s ease-in-out infinite;
+}
