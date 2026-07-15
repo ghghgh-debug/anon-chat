@@ -1,34 +1,44 @@
-# PostgreSQL — separate top-level section (NOT under services)
+# 1. Shared Secrets Group (Fixes cross-service variable injection bug)
+envVarGroups:
+  - name: anon-chat-shared-secrets
+    envVars:
+      - key: CENTRIFUGO_API_KEY
+        generateValue: true
+      - key: CENTRIFUGO_HMAC_SECRET
+        generateValue: true
+
+# 2. Database Definition (Top-level section, completely isolated from services)
 databases:
   - name: anon-chat-db
-    plan: basic-256mb          # or: free (expires in 30 days)
+    plan: standard
     postgresMajorVersion: "15"
-    region: frankfurt
     databaseName: anon_chat
     user: anon_user
-    ipAllowList: []            # internal-only access
 
 services:
-  # 1. Redis Cache
-  - type: keyvalue             # "redis" still works but keyvalue is current
+  # 3. Redis Cache (Modern keyvalue type)
+  - type: keyvalue
     name: anon-chat-redis
-    plan: starter
+    plan: standard
     region: frankfurt
-    ipAllowList: []            # internal-only access
+    ipAllowList: [] # Safe & completely private inside Render's private network
 
-  # 2. FastAPI Backend
+  # 4. FastAPI Backend Service (Scaled & Secure)
   - type: web
     name: anon-chat-backend
-    plan: starter
-    runtime: docker            # use runtime: docker (not env: docker)
+    plan: standard
+    runtime: docker
     dockerfilePath: ./backend/Dockerfile
+    numReplicas: 3
     region: frankfurt
-    healthCheckPath: /api/health
+    # healthCheckPath: /api/health # Uncomment if your FastAPI has a health check route
+    fromGroup:
+      name: anon-chat-shared-secrets # Automatically imports CENTRIFUGO_API_KEY & HMAC_SECRET
     envVars:
       - key: BOT_TOKEN
-        sync: false            # set manually in Dashboard
+        sync: false # Set manually in your Render Dashboard settings
       - key: WEBAPP_URL
-        value: https://anon-chat-frontend.onrender.com
+        value: https://onrender.com # Hardcoded to break the circular loop
       - key: DATABASE_URL
         fromDatabase:
           name: anon-chat-db
@@ -39,49 +49,46 @@ services:
           name: anon-chat-redis
           property: connectionString
       - key: CENTRIFUGO_URL
-        value: http://anon-chat-centrifugo:8000
-      - key: CENTRIFUGO_API_KEY
-        generateValue: true
-      - key: CENTRIFUGO_HMAC_SECRET
-        generateValue: true
-      - key: ALLOWED_ORIGINS
-        value: '["https://anon-chat-frontend.onrender.com"]'
+        value: http://anon-chat-centrifugo:8000 # Correct internal microservice routing
 
-  # 3. Centrifugo (real-time WebSocket)
+  # 5. Centrifugo Service (WebSocket Infrastructure)
   - type: web
     name: anon-chat-centrifugo
-    plan: starter
+    plan: standard
     runtime: docker
-    dockerfilePath: ./config/Dockerfile
+    dockerfilePath: ./Dockerfile.centrifugo
     dockerCommand: centrifugo --config=/centrifugo/config.json
+    port: 8000
     region: frankfurt
+    fromGroup:
+      name: anon-chat-shared-secrets # Imports the exact same keys as the Backend!
     envVars:
       - key: CENTRIFUGO_ADMIN_PASSWORD
         generateValue: true
       - key: CENTRIFUGO_ADMIN_SECRET
         generateValue: true
-      - key: CENTRIFUGO_API_KEY
-        fromService:
-          type: web
-          name: anon-chat-backend
-          envVarKey: CENTRIFUGO_API_KEY
+      # Map the shared group keys to the specific names Centrifugo expects
       - key: CENTRIFUGO_TOKEN_HMAC_SECRET_KEY
-        fromService:
-          type: web
-          name: anon-chat-backend
+        fromGroup:
+          name: anon-chat-shared-secrets
           envVarKey: CENTRIFUGO_HMAC_SECRET
       - key: CENTRIFUGO_ALLOWED_ORIGINS
         value: "*"
 
-  # 4. Frontend (Vue.js)
-  - type: web
+  # 6. Vue/Vite Frontend (Static Web App - Free & Globally Distributed)
+  - type: static
     name: anon-chat-frontend
-    plan: starter
-    runtime: docker
-    dockerfilePath: ./frontend/Dockerfile
-    region: frankfurt
+    runtime: static
+    buildCommand: npm run build
+    publishPath: dist
     envVars:
       - key: VITE_API_URL
-        value: https://anon-chat-backend.onrender.com/api
+        fromService:
+          type: web
+          name: anon-chat-backend
+          property: url
       - key: VITE_CENTRIFUGO_URL
-        value: wss://anon-chat-centrifugo.onrender.com/connection/websocket
+        fromService:
+          type: web
+          name: anon-chat-centrifugo
+          property: url
