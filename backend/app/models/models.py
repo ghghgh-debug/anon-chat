@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, E
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from typing import List, Optional
 import enum
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.db.base import Base, TimestampMixin
 
@@ -51,7 +51,8 @@ class Chat(Base, TimestampMixin):
     user_a_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     user_b_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     
-    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    # Fixed: Use timezone-aware datetime (was datetime.utcnow which returns naive)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     ended_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     ended_reason: Mapped[Optional[str]] = mapped_column(String(50), nullable=True) # manual/report/timeout
 
