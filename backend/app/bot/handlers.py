@@ -25,14 +25,10 @@ import logging
 # Import at top (was inside function — bug fix)
 from app.db.session import async_session
 from app.services.payment import payment_service
-<<<<<<< HEAD
-from app.core.config import get_settings
-=======
 from app.services.user import user_service
 from app.core.config import get_settings
 from app.models.models import Referral, ReferralClaim
 from sqlalchemy import select
->>>>>>> f49f89ea64883b54d8f9615cc8813e9d72dabfd8
 
 settings = get_settings()
 bot = Bot(token=settings.BOT_TOKEN)
@@ -59,10 +55,6 @@ async def cmd_start(message: Message, state: FSMContext):
     args = message.text.split()
     if len(args) > 1 and args[1].startswith("ref_"):
         ref_code = args[1][4:]
-<<<<<<< HEAD
-        # TODO: Track referral via API
-        await message.answer(f"👋 Добро пожаловать! Вы пришли по реферальной ссылке: {ref_code}")
-=======
         async with async_session() as db:
             referral = (await db.execute(select(Referral).where(Referral.code == ref_code))).scalar_one_or_none()
             if referral:
@@ -75,7 +67,6 @@ async def cmd_start(message: Message, state: FSMContext):
                     db.add(ReferralClaim(tg_id=message.from_user.id, referral_id=referral.id))
                     await db.commit()
                 await message.answer("👋 Добро пожаловать! Реферальная ссылка сохранена.")
->>>>>>> f49f89ea64883b54d8f9615cc8813e9d72dabfd8
 
     # Determine if user is admin
     is_admin = message.from_user.id in settings.ADMIN_IDS
@@ -101,8 +92,6 @@ async def cmd_start(message: Message, state: FSMContext):
     )
 
 
-<<<<<<< HEAD
-=======
 @router.message(Command("help"))
 async def cmd_help(message: Message):
     """Show help message with available commands."""
@@ -252,7 +241,6 @@ async def cmd_admin(message: Message):
     await message.answer(admin_text, reply_markup=keyboard, parse_mode="Markdown")
 
 
->>>>>>> f49f89ea64883b54d8f9615cc8813e9d72dabfd8
 # --- Payment handlers ---
 
 @router.pre_checkout_query()
@@ -328,13 +316,9 @@ def get_dispatcher() -> Dispatcher:
     """Create and configure the Aiogram dispatcher."""
     dp = Dispatcher()
     dp.include_router(router)
-<<<<<<< HEAD
-    return dp
-=======
     dp.startup.register(on_startup)
     return dp
 
 async def on_startup(dispatcher: Dispatcher):
     """Bot startup handler."""
     print(f"🤖 Bot started successfully: @{(await bot.get_me()).username}")
->>>>>>> f49f89ea64883b54d8f9615cc8813e9d72dabfd8
