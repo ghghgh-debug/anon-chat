@@ -9,7 +9,7 @@ databases:
         description: everywhere
 
 services:
-  # 1. Redis Cache (Render Key-Value Service)
+  # 1. Redis Cache
   - type: keyvalue
     name: anon-chat-redis
     plan: standard
@@ -17,17 +17,19 @@ services:
       - source: 0.0.0.0/0
         description: everywhere
 
-  # 2. FastAPI Backend Service (Scaled to 3 replicas for high availability)
+  # 2. FastAPI Backend Service
   - type: web
     name: anon-chat-backend
     plan: standard
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
-    numReplicas: 3
     region: frankfurt
+    scaling:
+      minInstances: 3
+      maxInstances: 3
     envVars:
       - key: BOT_TOKEN
-        sync: false # Must be set manually in Render Dashboard (get from @BotFather)
+        sync: false 
       - key: WEBAPP_URL
         value: https://anon-chat-frontend.onrender.com
       - key: DATABASE_URL
@@ -46,13 +48,13 @@ services:
       - key: CENTRIFUGO_HMAC_SECRET
         generateValue: true
 
-  # 3. Centrifugo Service (WebSocket engine handling 5k+ concurrent client connections)
+  # 3. Centrifugo Service
   - type: web
     name: anon-chat-centrifugo
     plan: standard
     runtime: docker
     dockerfilePath: ./Dockerfile.centrifugo
-    port: 8000
+    dockerPort: 8000
     region: frankfurt
     envVars:
       - key: CENTRIFUGO_ADMIN_PASSWORD
@@ -72,13 +74,13 @@ services:
       - key: CENTRIFUGO_ALLOWED_ORIGINS
         value: "*"
 
-  # 4. Vue/Vite Frontend (Static Web App - Free & handles unlimited traffic)
+  # 4. Vue/Vite Frontend (Static Web App)
   - type: web
     env: static
     name: anon-chat-frontend
     plan: starter
     buildCommand: npm run build
-    publishPath: dist
+    publishDir: dist
     envVars:
       - key: VITE_API_URL
         value: https://anon-chat-backend.onrender.com
