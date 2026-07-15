@@ -17,10 +17,12 @@ from aiogram.types import (
     PreCheckoutQuery,
     Message,
     LabeledPrice,
+    FSInputFile,
 )
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 import logging
+import os
 
 # Import at top (was inside function — bug fix)
 from app.db.session import async_session
@@ -66,27 +68,68 @@ async def cmd_start(message: Message, state: FSMContext):
                 if not claim:
                     db.add(ReferralClaim(tg_id=message.from_user.id, referral_id=referral.id))
                     await db.commit()
-                await message.answer("👋 Добро пожаловать! Реферальная ссылка сохранена.")
+                try:
+                    await message.answer(
+                        "👋 Добро пожаловать! Реферальная ссылка сохранена.\n"
+                        "👋 Welcome! Referral link saved.\n"
+                        "👋 Xush kelibsiz! Taklif havolasi saqlandi."
+                    )
+                except Exception as e:
+                    logger.error(f"Error answering referral saved message: {e}")
 
     # Determine if user is admin
     is_admin = message.from_user.id in settings.ADMIN_IDS
-    greeting = "👋 Привет, админ!" if is_admin else "👋 Привет!"
+    greeting_ru = "👋 Привет, админ!" if is_admin else "👋 Привет!"
+    greeting_en = "👋 Hello, admin!" if is_admin else "👋 Hello!"
+    greeting_uz = "👋 Salom, admin!" if is_admin else "👋 Salom!"
 
+    # 1. First send the welcome GIF
+    try:
+        gif_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "doc_2026-07-15_23-03-17.mp4")
+        if os.path.exists(gif_path):
+            await message.answer_animation(
+                animation=FSInputFile(gif_path),
+                caption="Masco Bot 🚀"
+            )
+        else:
+            logger.warning(f"Welcome GIF not found at path: {gif_path}")
+    except Exception as e:
+        logger.error(f"Error sending welcome GIF: {e}", exc_info=True)
+
+    # 2. After greeting message in Russian, English, and Uzbek
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
-            text="🚀 Открыть Анонимный Чат",
+            text="🚀 Открыть / Open / Ochish",
             web_app=WebAppInfo(url=settings.WEBAPP_URL),
         )],
     ])
 
-    await message.answer(
-        f"{greeting}\n\n"
-        "🔮 **Анонимный чат** — найди случайного собеседника по интересам!\n\n"
+    greeting_text = (
+        f"{greeting_ru} Добро пожаловать в **Masco Bot**!\n\n"
+        "🔮 **Masco Bot** — найди случайного собеседника по интересам!\n"
         "• 💬 Текст, фото, видео, голосовые\n"
         "• ⭐ Система репутации\n"
         "• 👑 Premium-возможности\n"
         "• 🛡 Модерация и безопасность\n\n"
-        "Нажми кнопку ниже, чтобы начать!",
+        "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n"
+        f"{greeting_en} Welcome to **Masco Bot**!\n\n"
+        "🔮 **Masco Bot** — find a random chat partner by interests!\n"
+        "• 💬 Text, photo, video, voice notes\n"
+        "• ⭐ Reputation system\n"
+        "• 👑 Premium features\n"
+        "• 🛡 Moderation & safety\n\n"
+        "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n"
+        f"{greeting_uz} **Masco Bot**-ga xush kelibsiz!\n\n"
+        "🔮 **Masco Bot** — qiziqishlaringiz bo'yicha tasodifiy suhbatdosh toping!\n"
+        "• 💬 Matn, rasm, video, ovozli xabarlar\n"
+        "• ⭐ Obro' (reputatsiya) tizimi\n"
+        "• 👑 Premium imkoniyatlar\n"
+        "• 🛡 Moderatsiya va xavfsizlik\n\n"
+        "Нажми кнопку ниже, чтобы начать! / Click the button below to start! / Boshlash uchun pastdagi tugmani bosing!"
+    )
+
+    await message.answer(
+        greeting_text,
         reply_markup=keyboard,
         parse_mode="Markdown",
     )
@@ -96,17 +139,30 @@ async def cmd_start(message: Message, state: FSMContext):
 async def cmd_help(message: Message):
     """Show help message with available commands."""
     help_text = (
-        "📚 **Справка по командам**\n\n"
-        "/start — Открыть приложение\n"
+        "📚 **Справка по командам / Help / Yordam**\n\n"
+        "🇷🇺 **RU:**\n"
+        "/start — Открыть Masco Bot\n"
         "/help — Показать эту справку\n"
         "/stats — Ваша статистика\n"
         "/profile — Ваш профиль\n"
-        "/premium — Информация о Premium\n"
+        "/premium — Информация о Premium\n\n"
+        "🇺🇸 **EN:**\n"
+        "/start — Open Masco Bot\n"
+        "/help — Show this help info\n"
+        "/stats — Your stats\n"
+        "/profile — Your profile\n"
+        "/premium — Premium info\n\n"
+        "🇺🇿 **UZ:**\n"
+        "/start — Masco Bot-ni ochish\n"
+        "/help — Ushbu ma'lumotni ko'rsatish\n"
+        "/stats — Sizning statistikangiz\n"
+        "/profile — Sizning profilingiz\n"
+        "/premium — Premium ma'lumotlar"
     )
     
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
-            text="🚀 Открыть приложение",
+            text="🚀 Открыть / Open / Ochish",
             web_app=WebAppInfo(url=settings.WEBAPP_URL),
         )],
     ])
@@ -122,31 +178,38 @@ async def cmd_stats(message: Message):
             user = await user_service.get_user_by_tg_id(db, message.from_user.id)
             
             if not user:
-                await message.answer("❌ Сначала откройте приложение и пройдите регистрацию.")
+                await message.answer(
+                    "❌ Сначала откройте приложение и пройдите регистрацию.\n"
+                    "❌ First open the app and register.\n"
+                    "❌ Birinchi ilovani ochib ro'yxatdan o'ting."
+                )
                 return
             
             if user.is_banned:
-                await message.answer("🚫 Ваш аккаунт заблокирован.")
+                await message.answer(
+                    "🚫 Ваш аккаунт заблокирован.\n"
+                    "🚫 Your account is banned.\n"
+                    "🚫 Sizning hisobingiz bloklangan."
+                )
                 return
             
             rep = await user_service.get_reputation_percent(user)
             
             stats_text = (
-                f"📊 **Ваша статистика**\n\n"
-                f"👤 Никнейм: {user.nickname}\n"
-                f"🎂 Возраст: {user.age} ({user.age_category.value})\n"
-                f"👍 Лайки: {user.likes}\n"
-                f"👎 Дизлайки: {user.dislikes}\n"
-                f"📈 Репутация: {rep}%\n"
-                f"⏱ Время в чатах: {user.total_chat_seconds // 60} мин\n"
-                f"{'👑 Premium' if user.is_premium else '💎 Стандарт'}"
+                f"📊 **Ваша статистика / Your Stats / Sizning statistikangiz**\n\n"
+                f"👤 {user.nickname}\n"
+                f"🎂 {user.age} ({user.age_category.value})\n"
+                f"👍 {user.likes} | 👎 {user.dislikes}\n"
+                f"📈 {rep}%\n"
+                f"⏱ {user.total_chat_seconds // 60} min\n"
+                f"{'👑 Premium' if user.is_premium else '💎 Standard'}"
             )
             
             await message.answer(stats_text, parse_mode="Markdown")
             
     except Exception as e:
         logger.error(f"Error in /stats: {e}")
-        await message.answer("❌ Произошла ошибка при загрузке статистики.")
+        await message.answer("❌ Произошла ошибка. / Error occurred. / Xatolik yuz berdi.")
 
 
 @router.message(Command("profile"))
@@ -157,24 +220,32 @@ async def cmd_profile(message: Message):
             user = await user_service.get_user_by_tg_id(db, message.from_user.id)
             
             if not user:
-                await message.answer("❌ Сначала откройте приложение и пройдите регистрацию.")
+                await message.answer(
+                    "❌ Сначала откройте приложение и пройдите регистрацию.\n"
+                    "❌ First open the app and register.\n"
+                    "❌ Birinchi ilovani ochib ro'yxatdan o'ting."
+                )
                 return
             
             if user.is_banned:
-                await message.answer("🚫 Ваш аккаунт заблокирован.")
+                await message.answer(
+                    "🚫 Ваш аккауйн заблокирован.\n"
+                    "🚫 Your account is banned.\n"
+                    "🚫 Sizning hisobingiz bloklangan."
+                )
                 return
             
             profile_text = (
-                f"👤 **Профиль: {user.nickname}**\n\n"
-                f"🎂 Возраст: {user.age}\n"
-                f"🎭 Пол: {user.gender.value}\n"
-                f"📊 Репутация: {await user_service.get_reputation_percent(user)}%\n"
-                f"{'👑 Premium активен' if user.is_premium else '💎 Без Premium'}\n"
+                f"👤 **Профиль / Profile / Profil: {user.nickname}**\n\n"
+                f"🎂 {user.age}\n"
+                f"🎭 {user.gender.value}\n"
+                f"📊 {await user_service.get_reputation_percent(user)}%\n"
+                f"{'👑 Premium active' if user.is_premium else '💎 Standard'}\n"
             )
             
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(
-                    text="🚀 Открыть приложение",
+                    text="🚀 Открыть / Open / Ochish",
                     web_app=WebAppInfo(url=settings.WEBAPP_URL),
                 )],
             ])
@@ -183,14 +254,15 @@ async def cmd_profile(message: Message):
             
     except Exception as e:
         logger.error(f"Error in /profile: {e}")
-        await message.answer("❌ Произошла ошибка при загрузке профиля.")
+        await message.answer("❌ Произошла ошибка. / Error occurred. / Xatolik yuz berdi.")
 
 
 @router.message(Command("premium"))
 async def cmd_premium(message: Message):
     """Show Premium information and pricing."""
     premium_text = (
-        "👑 **Premium подписка**\n\n"
+        "👑 **Premium подписка / Premium Subscription / Premium obuna**\n\n"
+        "🇷🇺 **RU:**\n"
         "✨ Преимущества:\n"
         "• 🔓 Фильтр по полу (мужской/женский)\n"
         "• 🌟 VIP-комнаты\n"
@@ -200,12 +272,32 @@ async def cmd_premium(message: Message):
         "• 99 ⭐ — Неделя\n"
         "• 299 ⭐ — Месяц\n"
         "• 25 ⭐ — Убрать дизлайк\n\n"
-        "Откройте приложение для покупки!"
+        "🇺🇸 **EN:**\n"
+        "✨ Benefits:\n"
+        "• 🔓 Gender filter (male/female)\n"
+        "• 🌟 VIP rooms\n"
+        "• 🎭 Exclusive emoji badges\n"
+        "• ⚡ Search priority\n\n"
+        "💰 Prices (Telegram Stars):\n"
+        "• 99 ⭐ — Week\n"
+        "• 299 ⭐ — Month\n"
+        "• 25 ⭐ — Remove dislike\n\n"
+        "🇺🇿 **UZ:**\n"
+        "✨ Afzalliklari:\n"
+        "• 🔓 Jins bo'yicha filtr (erkak/ayol)\n"
+        "• 🌟 VIP xonalar\n"
+        "• 🎭 Eksklyuziv emoji-nishonlar\n"
+        "• ⚡ Qidiruvdagi ustuvorlik\n\n"
+        "💰 Narxlar (Telegram Stars):\n"
+        "• 99 ⭐ — Hafta\n"
+        "• 299 ⭐ — Oy\n"
+        "• 25 ⭐ — Dizlikeni olib tashlash\n\n"
+        "Откройте приложение для покупки! / Open the app to purchase! / Sotib olish uchun ilovani oching!"
     )
     
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
-            text="🚀 Открыть приложение",
+            text="🚀 Открыть / Open / Ochish",
             web_app=WebAppInfo(url=settings.WEBAPP_URL),
         )],
     ])
@@ -217,23 +309,17 @@ async def cmd_premium(message: Message):
 async def cmd_admin(message: Message):
     """Admin-only command to show admin panel link."""
     if message.from_user.id not in settings.ADMIN_IDS:
-        await message.answer("🚫 Эта команда только для администраторов.")
+        await message.answer("🚫 Эта команда только для администраторов. / This is an admin command.")
         return
     
     admin_text = (
-        "🛡️ **Панель администратора**\n\n"
-        "Доступные функции:\n"
-        "• 📊 Статистика платформы\n"
-        "• 🚨 Жалобы и модерация\n"
-        "• 👥 Управление пользователями\n"
-        "• 🔗 Реферальные коды\n"
-        "• 📜 Логи действий\n\n"
-        "Откройте приложение для доступа к админке."
+        "🛡️ **Панель администратора / Admin Panel**\n\n"
+        "Откройте приложение для доступа к панели. / Open the app for root admin panel access."
     )
     
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
-            text="🚀 Открыть админку",
+            text="🚀 Открыть админку / Open Admin",
             web_app=WebAppInfo(url=settings.WEBAPP_URL),
         )],
     ])
