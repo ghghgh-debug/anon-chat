@@ -58,6 +58,7 @@ class Chat(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     user_a_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     user_b_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    language: Mapped[str] = mapped_column(String(10), default="ru")
     
     # Fixed: Use timezone-aware datetime (was datetime.utcnow which returns naive)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

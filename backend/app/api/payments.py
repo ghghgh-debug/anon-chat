@@ -107,18 +107,21 @@ async def get_prices(
 ):
     """Get current pricing for all purchasable items."""
     return {
-        "prices": {
-            "premium_week": {
+        "prices": [
+            {
+                "type": "premium_week",
                 "stars": settings.PREMIUM_WEEK_PRICE,
                 "label": "Premium — 1 неделя",
             },
-            "premium_month": {
+            {
+                "type": "premium_month",
                 "stars": settings.PREMIUM_MONTH_PRICE,
                 "label": "Premium — 1 месяц",
             },
-            "remove_dislike": {
+            {
+                "type": "remove_dislike",
                 "stars": settings.REMOVE_DISLIKE_PRICE,
                 "label": "Снять 1 дизлайк",
             },
-        }
+        ]
     }

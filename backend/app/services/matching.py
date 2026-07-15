@@ -57,6 +57,18 @@ class MatchingService:
             if candidate["find_gender"] != seeker["gender"]:
                 return False
 
+        # Age category check (bidirectional)
+        seeker_age_category = seeker.get("age_category")
+        candidate_age_category = candidate.get("age_category")
+
+        if seeker.get("find_age_category", "any") != "any":
+            if seeker["find_age_category"] != candidate_age_category:
+                return False
+
+        if candidate.get("find_age_category", "any") != "any":
+            if candidate["find_age_category"] != seeker_age_category:
+                return False
+
         # Age check (bidirectional)
         seeker_age = seeker.get("age", 0)
         candidate_age = candidate.get("age", 0)
@@ -69,6 +81,12 @@ class MatchingService:
         if candidate.get("age_from") and seeker_age < candidate["age_from"]:
             return False
         if candidate.get("age_to") and seeker_age > candidate["age_to"]:
+            return False
+
+        # Language check (mutual)
+        seeker_lang = seeker.get("chat_language", "ru")
+        candidate_lang = candidate.get("chat_language", "ru")
+        if seeker_lang != candidate_lang:
             return False
 
         # Topic overlap (at least one shared topic)
@@ -86,16 +104,31 @@ class MatchingService:
 
         return True
 
+    async def set_chat_id(self, room_key: str, chat_id: int) -> None:
+        """Set the chat_id in the Redis room object."""
+        await self.init_redis()
+        room_data = await self.redis.get(room_key)
+        if room_data:
+            room = json.loads(room_data)
+            room["chat_id"] = chat_id
+            ttl = await self.redis.ttl(room_key)
+            if ttl <= 0:
+                ttl = self.settings.CENTRIFUGO_TOKEN_TTL
+            await self.redis.set(room_key, json.dumps(room), ex=ttl)
+
     async def find_or_create_room(
         self,
         user_id: int,
         nickname: str,
         gender: str,
         age: int,
+        age_category: str = "adult",
         find_gender: str = "any",
+        find_age_category: str = "any",
         age_from: int = 14,
         age_to: int = 99,
         topics: list[str] = None,
+        chat_language: str = "ru",
         is_premium: bool = False,
         vip_only: bool = False,
         blacklist: list[int] = None,
@@ -115,10 +148,13 @@ class MatchingService:
             "nickname": nickname,
             "gender": gender,
             "age": age,
+            "age_category": age_category,
             "find_gender": find_gender,
+            "find_age_category": find_age_category,
             "age_from": age_from,
             "age_to": age_to,
             "topics": topics or [],
+            "chat_language": chat_language,
             "is_premium": is_premium,
             "vip_only": vip_only,
         }
