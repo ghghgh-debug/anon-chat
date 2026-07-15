@@ -5,23 +5,23 @@ from functools import lru_cache
 
 class Settings(BaseSettings):
     # App
-    APP_NAME: str = "AnonChat TMA"
+    APP_NAME: str = "Masco Bot"
     DEBUG: bool = False
 
-    # Telegram Bot — REQUIRED, must be set in .env
-    BOT_TOKEN: str  # No default! Load from environment only
-    WEBAPP_URL: str  # No default!
+    # Telegram Bot
+    BOT_TOKEN: str = ""
+    WEBAPP_URL: str = ""
 
-    # Database — REQUIRED
-    DATABASE_URL: str
+    # Database
+    DATABASE_URL: str = ""
 
-    # Redis — REQUIRED
-    REDIS_URL: str
+    # Redis
+    REDIS_URL: str = ""
 
-    # Centrifugo — REQUIRED
-    CENTRIFUGO_URL: str
-    CENTRIFUGO_API_KEY: str
-    CENTRIFUGO_HMAC_SECRET: str
+    # Centrifugo
+    CENTRIFUGO_URL: str = ""
+    CENTRIFUGO_API_KEY: str = ""
+    CENTRIFUGO_HMAC_SECRET: str = ""
     CENTRIFUGO_TOKEN_TTL: int = 86400  # 24 hours
 
     # CORS — Restrict to your frontend domain
@@ -60,6 +60,6 @@ class Settings(BaseSettings):
 @lru_cache()
 def get_settings() -> Settings:
     settings = Settings()
-    if settings.DATABASE_URL.startswith("postgresql://"):
+    if settings.DATABASE_URL and settings.DATABASE_URL.startswith("postgresql://"):
         settings.DATABASE_URL = settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
     return settings
