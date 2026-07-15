@@ -8,7 +8,17 @@
 import { Centrifuge, Subscription } from 'centrifuge'
 import type { PublicationContext } from 'centrifuge'
 
-const CENTRIFUGO_URL = import.meta.env.VITE_CENTRIFUGO_URL || 'ws://localhost:8000/connection/websocket'
+let CENTRIFUGO_URL = import.meta.env.VITE_CENTRIFUGO_URL || 'ws://localhost:8000/connection/websocket'
+if (typeof window !== 'undefined' && window.location.origin.includes('anon-chat-frontend')) {
+  CENTRIFUGO_URL = window.location.origin.replace('anon-chat-frontend', 'anon-chat-centrifugo')
+}
+
+if (CENTRIFUGO_URL.startsWith('http://') || CENTRIFUGO_URL.startsWith('https://')) {
+  CENTRIFUGO_URL = CENTRIFUGO_URL.replace(/^http/, 'ws')
+}
+if (!CENTRIFUGO_URL.endsWith('/connection/websocket') && !CENTRIFUGO_URL.endsWith('/connection/websocket/')) {
+  CENTRIFUGO_URL = CENTRIFUGO_URL.endsWith('/') ? `${CENTRIFUGO_URL}connection/websocket` : `${CENTRIFUGO_URL}/connection/websocket`
+}
 
 let centrifuge: Centrifuge | null = null
 const subscriptions: Map<string, Subscription> = new Map()
