@@ -10,6 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import get_current_user
 from app.db.session import get_db
 from app.services.user import user_service
+<<<<<<< HEAD
+=======
+from app.models.models import Referral, ReferralClaim
+from sqlalchemy import select
+>>>>>>> f49f89ea64883b54d8f9615cc8813e9d72dabfd8
 from app.services.moderation import moderation_service
 from app.core.config import get_settings
 
@@ -26,7 +31,12 @@ class OnboardingRequest(BaseModel):
     topics: List[str] = Field(default_factory=list)
     avatar_url: Optional[str] = None
     bio: Optional[str] = None
+<<<<<<< HEAD
     agreed_to_rules: bool = Field(..., description="Must agree to 14+ rules")
+=======
+    agreed_to_rules: bool = Field(..., description="Must agree to rules")
+    app_language: str = Field(default="ru", pattern="^(ru|en|uz)$")
+>>>>>>> f49f89ea64883b54d8f9615cc8813e9d72dabfd8
 
 class ProfileUpdateRequest(BaseModel):
     nickname: Optional[str] = Field(None, min_length=2, max_length=50)
@@ -35,12 +45,20 @@ class ProfileUpdateRequest(BaseModel):
     avatar_url: Optional[str] = None
     bio: Optional[str] = None
     chosen_emoji: Optional[str] = None
+<<<<<<< HEAD
+=======
+    app_language: Optional[str] = Field(None, pattern="^(ru|en|uz)$")
+>>>>>>> f49f89ea64883b54d8f9615cc8813e9d72dabfd8
 
 class UserResponse(BaseModel):
     id: int
     tg_id: int
     nickname: str
     age: int
+<<<<<<< HEAD
+=======
+    age_category: str
+>>>>>>> f49f89ea64883b54d8f9615cc8813e9d72dabfd8
     gender: str
     avatar_url: Optional[str]
     bio: Optional[str]
@@ -52,6 +70,10 @@ class UserResponse(BaseModel):
     total_chat_seconds: int
     is_admin: bool
     is_banned: bool
+<<<<<<< HEAD
+=======
+    app_language: str
+>>>>>>> f49f89ea64883b54d8f9615cc8813e9d72dabfd8
 
 class BlacklistRequest(BaseModel):
     blocked_user_id: int
@@ -67,7 +89,15 @@ async def onboarding(
 ):
     """Complete onboarding — create or update user profile."""
     if not data.agreed_to_rules:
+<<<<<<< HEAD
         raise HTTPException(status_code=400, detail="You must agree to the rules (14+)")
+=======
+        raise HTTPException(status_code=400, detail="You must agree to the rules")
+
+    # Auto-calculate age category
+    from app.models.models import AgeCategoryEnum
+    age_category = AgeCategoryEnum.teen if data.age < 18 else AgeCategoryEnum.adult
+>>>>>>> f49f89ea64883b54d8f9615cc8813e9d72dabfd8
 
     user, created = await user_service.get_or_create_user(
         db,
@@ -75,9 +105,17 @@ async def onboarding(
         defaults={
             "nickname": data.nickname,
             "age": data.age,
+<<<<<<< HEAD
             "gender": data.gender,
             "avatar_url": data.avatar_url,
             "bio": data.bio,
+=======
+            "age_category": age_category,
+            "gender": data.gender,
+            "avatar_url": data.avatar_url,
+            "bio": data.bio,
+            "app_language": data.app_language,
+>>>>>>> f49f89ea64883b54d8f9615cc8813e9d72dabfd8
         },
     )
 
@@ -86,17 +124,43 @@ async def onboarding(
         user = await user_service.update_profile(db, user.id, {
             "nickname": data.nickname,
             "age": data.age,
+<<<<<<< HEAD
             "gender": data.gender,
             "avatar_url": data.avatar_url,
             "bio": data.bio,
         })
 
+=======
+            "age_category": age_category,
+            "gender": data.gender,
+            "avatar_url": data.avatar_url,
+            "bio": data.bio,
+            "app_language": data.app_language,
+        })
+
+    # A referral is captured by the bot before the Mini App onboarding begins.
+    # It is applied once, so reopening a referral link cannot inflate counters.
+    claim_result = await db.execute(select(ReferralClaim).where(ReferralClaim.tg_id == tg_user["id"]))
+    claim = claim_result.scalar_one_or_none()
+    if claim and not user.referred_by_referral_id:
+        referral = await db.get(Referral, claim.referral_id)
+        if referral:
+            user.referred_by_referral_id = referral.id
+            referral.uses_count += 1
+        await db.delete(claim)
+        await db.flush()
+
+>>>>>>> f49f89ea64883b54d8f9615cc8813e9d72dabfd8
     rep = await user_service.get_reputation_percent(user)
     return UserResponse(
         id=user.id,
         tg_id=user.tg_id,
         nickname=user.nickname,
         age=user.age,
+<<<<<<< HEAD
+=======
+        age_category=user.age_category.value if hasattr(user.age_category, 'value') else user.age_category,
+>>>>>>> f49f89ea64883b54d8f9615cc8813e9d72dabfd8
         gender=user.gender.value if hasattr(user.gender, 'value') else user.gender,
         avatar_url=user.avatar_url,
         bio=user.bio,
@@ -108,6 +172,10 @@ async def onboarding(
         total_chat_seconds=user.total_chat_seconds,
         is_admin=user.tg_id in settings.ADMIN_IDS,
         is_banned=user.is_banned,
+<<<<<<< HEAD
+=======
+        app_language=user.app_language,
+>>>>>>> f49f89ea64883b54d8f9615cc8813e9d72dabfd8
     )
 
 
@@ -127,12 +195,26 @@ async def get_me(
     # Check premium expiry
     await user_service.check_premium_expiry(db, user.id)
 
+<<<<<<< HEAD
+=======
+    # Recalculate age category if needed
+    from app.models.models import AgeCategoryEnum
+    expected_category = AgeCategoryEnum.teen if user.age < 18 else AgeCategoryEnum.adult
+    if user.age_category != expected_category:
+        user.age_category = expected_category
+        await db.flush()
+
+>>>>>>> f49f89ea64883b54d8f9615cc8813e9d72dabfd8
     rep = await user_service.get_reputation_percent(user)
     return UserResponse(
         id=user.id,
         tg_id=user.tg_id,
         nickname=user.nickname,
         age=user.age,
+<<<<<<< HEAD
+=======
+        age_category=user.age_category.value if hasattr(user.age_category, 'value') else user.age_category,
+>>>>>>> f49f89ea64883b54d8f9615cc8813e9d72dabfd8
         gender=user.gender.value if hasattr(user.gender, 'value') else user.gender,
         avatar_url=user.avatar_url,
         bio=user.bio,
@@ -144,6 +226,10 @@ async def get_me(
         total_chat_seconds=user.total_chat_seconds,
         is_admin=user.tg_id in settings.ADMIN_IDS,
         is_banned=user.is_banned,
+<<<<<<< HEAD
+=======
+        app_language=user.app_language,
+>>>>>>> f49f89ea64883b54d8f9615cc8813e9d72dabfd8
     )
 
 
@@ -163,6 +249,14 @@ async def update_profile(
     if "chosen_emoji" in update_data and not user.is_premium:
         raise HTTPException(status_code=403, detail="Emoji badges require Premium")
 
+<<<<<<< HEAD
+=======
+    # Auto-calculate age category if age is being updated
+    if "age" in update_data:
+        from app.models.models import AgeCategoryEnum
+        update_data["age_category"] = AgeCategoryEnum.teen if update_data["age"] < 18 else AgeCategoryEnum.adult
+
+>>>>>>> f49f89ea64883b54d8f9615cc8813e9d72dabfd8
     user = await user_service.update_profile(db, user.id, update_data)
     rep = await user_service.get_reputation_percent(user)
     return UserResponse(
@@ -170,6 +264,10 @@ async def update_profile(
         tg_id=user.tg_id,
         nickname=user.nickname,
         age=user.age,
+<<<<<<< HEAD
+=======
+        age_category=user.age_category.value if hasattr(user.age_category, 'value') else user.age_category,
+>>>>>>> f49f89ea64883b54d8f9615cc8813e9d72dabfd8
         gender=user.gender.value if hasattr(user.gender, 'value') else user.gender,
         avatar_url=user.avatar_url,
         bio=user.bio,
@@ -181,6 +279,10 @@ async def update_profile(
         total_chat_seconds=user.total_chat_seconds,
         is_admin=user.tg_id in settings.ADMIN_IDS,
         is_banned=user.is_banned,
+<<<<<<< HEAD
+=======
+        app_language=user.app_language,
+>>>>>>> f49f89ea64883b54d8f9615cc8813e9d72dabfd8
     )
 
 
