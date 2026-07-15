@@ -22,7 +22,8 @@ services:
     name: anon-chat-backend
     plan: standard
     runtime: docker
-    dockerfilePath: ./backend/Dockerfile
+    rootDir: backend
+    dockerfilePath: Dockerfile
     region: frankfurt
     numInstances: 3  
     envVars:
@@ -77,6 +78,7 @@ services:
   - type: web
     env: static # Official spec for static sites
     name: anon-chat-frontend
+    rootDir: frontend
     buildCommand: npm run build
     staticPublishPath: dist
     envVars:
