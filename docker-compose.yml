@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: anon_user
+      POSTGRES_PASSWORD: anon_password
+      POSTGRES_DB: anon_chat
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  centrifugo:
+    image: centrifugo/centrifugo:v5
+    environment:
+      - CENTRIFUGO_TOKEN_HMAC_SECRET_KEY=my_super_secret_key_12345
+      - CENTRIFUGO_ADMIN_PASSWORD=admin
+      - CENTRIFUGO_ADMIN_SECRET=admin
+      - CENTRIFUGO_API_KEY=my_api_key_12345
+      - CENTRIFUGO_ALLOWED_ORIGINS=*
+    ports:
+      - "8000:8000"
+    command: centrifugo --config=/centrifugo/config.json
+    volumes:
+      - ./config/centrifugo.json:/centrifugo/config.json
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:

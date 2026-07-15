@@ -1,0 +1,8 @@
+{
+  "name": "Anon Chat",
+  "description": "An elegant anonymous chat applet integrated with interactive Gemini-powered mock partners.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
