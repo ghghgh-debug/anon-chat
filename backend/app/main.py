@@ -92,10 +92,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS
+# CORS — Restrict to frontend domain only (security fix)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, restrict to your frontend domain
+    allow_origins=settings.ALLOWED_ORIGINS,  # Fixed: was ["*"]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
