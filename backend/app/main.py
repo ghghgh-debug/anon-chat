@@ -86,8 +86,8 @@ async def lifespan(app: FastAPI):
 # --- Create app ---
 
 app = FastAPI(
-    title="AnonChat TMA API",
-    description="Telegram Mini App — Anonymous Chat API",
+    title="Masco Bot API",
+    description="Telegram Mini App — Masco Bot API",
     version="1.0.0",
     lifespan=lifespan,
 )
