@@ -75,9 +75,10 @@ async def onboarding(
     if not data.agreed_to_rules:
         raise HTTPException(status_code=400, detail="You must agree to the rules")
 
-    # Auto-calculate age category
-    from app.models.models import AgeCategoryEnum
-    age_category = AgeCategoryEnum.teen if data.age < 18 else AgeCategoryEnum.adult
+    # Convert to appropriate Enums
+    from app.models.models import AgeCategoryEnum, GenderEnum
+    age_category_val = AgeCategoryEnum.teen if data.age < 18 else AgeCategoryEnum.adult
+    gender_val = GenderEnum(data.gender)
 
     user, created = await user_service.get_or_create_user(
         db,
@@ -85,8 +86,8 @@ async def onboarding(
         defaults={
             "nickname": data.nickname,
             "age": data.age,
-            "age_category": age_category,
-            "gender": data.gender,
+            "age_category": age_category_val,
+            "gender": gender_val,
             "avatar_url": data.avatar_url,
             "bio": data.bio,
             "app_language": data.app_language,
@@ -98,8 +99,8 @@ async def onboarding(
         user = await user_service.update_profile(db, user.id, {
             "nickname": data.nickname,
             "age": data.age,
-            "age_category": age_category,
-            "gender": data.gender,
+            "age_category": age_category_val,
+            "gender": gender_val,
             "avatar_url": data.avatar_url,
             "bio": data.bio,
             "app_language": data.app_language,
@@ -200,9 +201,13 @@ async def update_profile(
     if "chosen_emoji" in update_data and not user.is_premium:
         raise HTTPException(status_code=403, detail="Emoji badges require Premium")
 
+    # Convert to appropriate Enums
+    from app.models.models import GenderEnum, AgeCategoryEnum
+    if "gender" in update_data:
+        update_data["gender"] = GenderEnum(update_data["gender"])
+
     # Auto-calculate age category if age is being updated
     if "age" in update_data:
-        from app.models.models import AgeCategoryEnum
         update_data["age_category"] = AgeCategoryEnum.teen if update_data["age"] < 18 else AgeCategoryEnum.adult
 
     user = await user_service.update_profile(db, user.id, update_data)
