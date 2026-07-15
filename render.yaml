@@ -24,9 +24,7 @@ services:
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     region: frankfurt
-    scaling:
-      minInstances: 3
-      maxInstances: 3
+    numInstances: 3  # <-- Correct configuration for fixed manual scaling
     envVars:
       - key: BOT_TOKEN
         sync: false 
@@ -48,7 +46,7 @@ services:
       - key: CENTRIFUGO_HMAC_SECRET
         generateValue: true
 
- # 3. Centrifugo Service
+  # 3. Centrifugo Service
   - type: web
     name: anon-chat-centrifugo
     plan: standard
@@ -57,7 +55,7 @@ services:
     region: frankfurt
     envVars:
       - key: PORT
-        value: "8000" # Explicitly tells Render which port your container listens on
+        value: "8000"
       - key: CENTRIFUGO_ADMIN_PASSWORD
         generateValue: true
       - key: CENTRIFUGO_ADMIN_SECRET
@@ -77,11 +75,11 @@ services:
 
   # 4. Vue/Vite Frontend (Static Web App)
   - type: web
-    runtime: static # Corrected from "env: static"
+    runtime: static
     name: anon-chat-frontend
     plan: starter
     buildCommand: npm run build
-    staticPublishPath: dist # Corrected from "publishDir"
+    staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
         value: https://anon-chat-backend.onrender.com
