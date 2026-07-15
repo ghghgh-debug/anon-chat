@@ -69,8 +69,15 @@ async def rate_limit_middleware(request: Request, call_next):
 async def lifespan(app: FastAPI):
     """Application startup and shutdown events."""
     # Create database tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(
+            f"Could not connect to database on startup. "
+            f"If this is build/dry-run, this is expected: {e}"
+        )
     
     # Create upload directory
     os.makedirs(settings.MEDIA_UPLOAD_DIR, exist_ok=True)
