@@ -48,15 +48,16 @@ services:
       - key: CENTRIFUGO_HMAC_SECRET
         generateValue: true
 
-  # 3. Centrifugo Service
+ # 3. Centrifugo Service
   - type: web
     name: anon-chat-centrifugo
     plan: standard
     runtime: docker
     dockerfilePath: ./Dockerfile.centrifugo
-    dockerPort: 8000
     region: frankfurt
     envVars:
+      - key: PORT
+        value: "8000" # Explicitly tells Render which port your container listens on
       - key: CENTRIFUGO_ADMIN_PASSWORD
         generateValue: true
       - key: CENTRIFUGO_ADMIN_SECRET
@@ -76,11 +77,11 @@ services:
 
   # 4. Vue/Vite Frontend (Static Web App)
   - type: web
-    env: static
+    runtime: static # Corrected from "env: static"
     name: anon-chat-frontend
     plan: starter
     buildCommand: npm run build
-    publishDir: dist
+    staticPublishPath: dist # Corrected from "publishDir"
     envVars:
       - key: VITE_API_URL
         value: https://anon-chat-backend.onrender.com
