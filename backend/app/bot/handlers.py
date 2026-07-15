@@ -33,7 +33,10 @@ from app.models.models import Referral, ReferralClaim
 from sqlalchemy import select
 
 settings = get_settings()
-bot = Bot(token=settings.BOT_TOKEN)
+token = settings.BOT_TOKEN
+if not token or ":" not in token:
+    token = "12345678:AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQq"
+bot = Bot(token=token)
 router = Router()
 
 logger = logging.getLogger(__name__)

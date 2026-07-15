@@ -11,6 +11,10 @@ class GenderEnum(str, enum.Enum):
     female = "female"
     any = "any"
 
+class AgeCategoryEnum(str, enum.Enum):
+    teen = "teen"
+    adult = "adult"
+
 class MessageTypeEnum(str, enum.Enum):
     text = "text"
     photo = "photo"
@@ -43,6 +47,10 @@ class User(Base, TimestampMixin):
     dislikes: Mapped[int] = mapped_column(Integer, default=0)
     total_chat_seconds: Mapped[int] = mapped_column(Integer, default=0)
     is_banned: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    age_category: Mapped[AgeCategoryEnum] = mapped_column(Enum(AgeCategoryEnum), default=AgeCategoryEnum.adult)
+    app_language: Mapped[str] = mapped_column(String(10), default="ru")
+    referred_by_referral_id: Mapped[Optional[int]] = mapped_column(ForeignKey("referrals.id"), nullable=True)
 
 class Chat(Base, TimestampMixin):
     __tablename__ = "chats"
@@ -107,3 +115,18 @@ class Referral(Base, TimestampMixin):
     code: Mapped[str] = mapped_column(String(20), unique=True, index=True)
     created_by_admin_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     uses_count: Mapped[int] = mapped_column(Integer, default=0)
+
+class ReferralClaim(Base, TimestampMixin):
+    __tablename__ = "referral_claims"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    tg_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
+    referral_id: Mapped[int] = mapped_column(ForeignKey("referrals.id"))
+
+class AdminLog(Base, TimestampMixin):
+    __tablename__ = "admin_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    admin_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    action: Mapped[str] = mapped_column(String(255))
+    target_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
