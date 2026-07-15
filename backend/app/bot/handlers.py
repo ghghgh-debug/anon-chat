@@ -433,12 +433,17 @@ async def handle_successful_payment(message: Message):
 
 # --- Utility ---
 
+_dp = None
+
+
 def get_dispatcher() -> Dispatcher:
-    """Create and configure the Aiogram dispatcher."""
-    dp = Dispatcher()
-    dp.include_router(router)
-    dp.startup.register(on_startup)
-    return dp
+    """Create and configure the Aiogram dispatcher (singleton)."""
+    global _dp
+    if _dp is None:
+        _dp = Dispatcher()
+        _dp.include_router(router)
+        _dp.startup.register(on_startup)
+    return _dp
 
 async def on_startup(dispatcher: Dispatcher):
     """Bot startup handler."""

@@ -98,6 +98,23 @@ async def lifespan(app: FastAPI):
     
     # Create upload directory
     os.makedirs(settings.MEDIA_UPLOAD_DIR, exist_ok=True)
+
+    # Set up Telegram webhook if token is valid and BACKEND_URL or RENDER_EXTERNAL_URL is available
+    webhook_url = settings.BACKEND_URL or os.environ.get("RENDER_EXTERNAL_URL")
+    if webhook_url and settings.BOT_TOKEN and ":" in settings.BOT_TOKEN and not settings.BOT_TOKEN.startswith("12345678"):
+        webhook_url = webhook_url.rstrip("/")
+        full_webhook_url = f"{webhook_url}/webhook/telegram"
+        try:
+            from app.bot.handlers import bot
+            import logging
+            logger = logging.getLogger("uvicorn.error")
+            logger.info(f"Setting Telegram webhook to: {full_webhook_url}")
+            await bot.set_webhook(full_webhook_url)
+            logger.info("Telegram webhook set successfully!")
+        except Exception as e:
+            import logging
+            logger = logging.getLogger("uvicorn.error")
+            logger.error(f"Failed to set Telegram webhook: {e}")
     
     yield
     

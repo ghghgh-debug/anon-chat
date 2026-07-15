@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     # Telegram Bot
     BOT_TOKEN: str = ""
     WEBAPP_URL: str = ""
+    BACKEND_URL: str = ""
 
     # Database
     DATABASE_URL: str = ""
