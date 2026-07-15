@@ -5,13 +5,29 @@
  * in the Authorization header on every request.
  */
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
+let rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
+if (rawApiUrl && !rawApiUrl.endsWith('/api') && !rawApiUrl.endsWith('/api/')) {
+  rawApiUrl = rawApiUrl.endsWith('/') ? `${rawApiUrl}api` : `${rawApiUrl}/api`
+}
+const API_BASE = rawApiUrl
 
 function getInitData(): string {
   if (window.Telegram?.WebApp?.initData) {
     return window.Telegram.WebApp.initData
   }
-  return ''
+  let localData = localStorage.getItem('mock_tma_init_data')
+  if (!localData) {
+    const randomId = Math.floor(10000000 + Math.random() * 90000000)
+    const mockUser = {
+      id: randomId,
+      username: `cyber_user_${randomId}`,
+      first_name: 'Cyber',
+      last_name: 'Anon'
+    }
+    localData = `user=${encodeURIComponent(JSON.stringify(mockUser))}&auth_date=${Math.floor(Date.now() / 1000)}&hash=mock_hash`
+    localStorage.setItem('mock_tma_init_data', localData)
+  }
+  return localData
 }
 
 async function request<T>(
